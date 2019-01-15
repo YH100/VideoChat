@@ -1,22 +1,47 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title></title>
-  </head>
-  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" charset="utf-8"></script>
+</head>
+<body>
 
-    <label>Your ID:</label><br/>
-    <textarea id="yourId"></textarea><br/>
-    <label>Other ID:</label><br/>
-    <textarea id="otherId"></textarea>
-    <button id="connect">connect</button><br/>
+<label>Your ID:</label><br/>
+<textarea id="yourId"></textarea><br/>
+<label>Other ID:</label><br/>
+<textarea id="otherId"></textarea>
+<button id="connect">connect</button>
+<br/>
 
-    <label>Enter Message:</label><br/>
-    <textarea id="yourMessage"></textarea>
-    <button id="send">send</button>
-    <pre id="messages"></pre>
+<label>Enter Message:</label><br/>
+<textarea id="yourMessage"></textarea>
+<button id="send">send</button>
+<pre id="messages"></pre>
 
-    <script src="bundle.js" charset="utf-8"></script>
-  </body>
+<script src="index.js" charset="utf-8"></script>
+
+<script language="JavaScript">
+    var socket = io();
+    socket.on("message", addMessages);
+
+    // window.onload = function() {
+    //   var sendButton = document.getElementById("btnSend");
+    //   sendButton.addEventListener("click", function() {
+    //     var textElement = document.getElementById("textfield");
+    //     var message = textElement.value;
+    //     textElement.value = '';
+    //     if (message && message.length != 0)
+    //     {
+    //       var encryptedMessage = aesObject.encrypt(message);
+    //       socket.emit('text', {msg: encryptedMessage, userName: userName, userPhoto: userPhoto});
+    //     }
+    //   });
+    // };
+
+    function addMessages(message) {
+        alert(message);
+    }
+</script>
+</body>
 </html>
