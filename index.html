@@ -25,6 +25,10 @@
     var socket = io();
     socket.on("message", addMessages);
 
+    socket.on('newUser', function(msg){
+        console.log(msg);
+    });
+
     // window.onload = function() {
     //   var sendButton = document.getElementById("btnSend");
     //   sendButton.addEventListener("click", function() {
