@@ -1,7 +1,7 @@
 var getUserMedia = require('getusermedia')
 
 getUserMedia({ video: true, audio: false }, function (err, stream) {
-  if (err) return console.error(err)
+//  if (err) return console.error(err)
   var startTime = window.performance.now();
   var Peer = require('simple-peer')
   var peer = new Peer({

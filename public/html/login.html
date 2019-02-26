@@ -1,66 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Login/Logout animation concept</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sign Up Form by Colorlib</title>
 
-    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Open+Sans'>
+    <!-- Font Icon -->
+    <link rel="stylesheet" href="fonts/material-icon/css/material-design-iconic-font.min.css">
 
+    <!-- Main css -->
     <link rel="stylesheet" href="css/style.css">
-
-
 </head>
+<body>
+    <div class="main">
 
-<body bgcolor="#FFFFFF">
-
-
-<div class="cont">
-    <div class="demo">
-        <div class="login">
-            <div><br> <br><br> <br>
-                <center><img
-                        src="https://is5-ssl.mzstatic.com/image/thumb/Purple111/v4/20/c9/35/20c935e2-2f56-35b1-8b3c-e2738556d825/source/512x512bb.jpg"
-                        alt="Avatar"></center>
-            </div>
-            <form action="/loginForm" method="POST">
-                <div class="login__form">
-                    <div class="login__row">
-                        <svg class="login__icon name svg-icon" viewBox="0 0 20 20">
-                            <path d="M0,20 a10,8 0 0,1 20,0z M10,0 a4,4 0 0,1 0,8 a4,4 0 0,1 0,-8"/>
-                        </svg>
-                        <input type="text" name="userName" class="login__input name" placeholder="Username"/>
+        <!-- Sing in  Form -->
+        <section class="sign-in">
+            <div class="container">
+                <div class="signin-content">
+                    <div class="signin-image">
+                        <figure><img src="images/signin-image.jpg" alt="sing up image"></figure>
+                        <a  href="#signinf" class="signup-image-link">Create an account</a>
                     </div>
-                    <div class="login__row">
-                        <svg class="login__icon pass svg-icon" viewBox="0 0 20 20">
-                            <path d="M0,20 20,20 20,8 0,8z M10,13 10,16z M4,8 a6,8 0 0,1 12,0"/>
-                        </svg>
-                        <input type="password" name="password" class="login__input pass" placeholder="Password"/>
+
+                    <div class="signin-form">
+                        <h2 class="form-title">Sign up</h2>
+                        <form method="POST" class="register-form" id="login-form" action="/loginForm">
+                            <div class="form-group">
+                                <label for="your_name"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                                <input type="text" name="userName" id="userName" placeholder="Your Name"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="your_pass"><i class="zmdi zmdi-lock"></i></label>
+                                <input type="password" name="password" id="password" placeholder="Password"/>
+                            </div>
+                            <div class="form-group">
+                                <input type="checkbox" name="remember-me" id="remember-me" class="agree-term" />
+                                <label for="remember-me" class="label-agree-term"><span><span></span></span>Remember me</label>
+                            </div>
+                            <div class="form-group form-button">
+                                <input type="submit" name="signin" id="signin" class="form-submit" value="Log in"/>
+                            </div>
+                        </form>
+                        <div class="social-login">
+                            <span class="social-label">Or login with</span>
+                            <ul class="socials">
+                                <li><a href="#"><i class="display-flex-center zmdi zmdi-facebook"></i></a></li>
+                                <li><a href="#"><i class="display-flex-center zmdi zmdi-twitter"></i></a></li>
+                                <li><a href="#"><i class="display-flex-center zmdi zmdi-google"></i></a></li>
+                            </ul>
+                        </div>
                     </div>
-                    <button type="button" class="login__submit">Sign in</button>
-                    <p class="login__signup">Don't have an account? &nbsp;<a>Sign up</a></p>
-                </div>
-            </form>
-        </div>
-        <div class="app">
-            <div class="app__top">
-                <div class="app__menu-btn">
-                    <span></span>
-                </div>
-                <div class="app__logout">
-                    <svg class="app__logout-icon svg-icon" viewBox="0 0 20 20">
-                        <path d="M6,3 a8,8 0 1,0 8,0 M10,0 10,12"/>
-                    </svg>
                 </div>
             </div>
-        </div>
+        </section>
+
     </div>
-    <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <br>
+    <br>
+    <br>
+    <br>
+        <!-- Sign up form -->
+        <section class="signup">
+            <div class="container">
+                <div class="signup-content">
+                    <div class="signup-form">
+                        <h2 class="form-title">Sign up</h2>
+                        <form method="POST" class="register-form" id="register-form" action="/SignUpForm">
+                            <div class="form-group">
+                                <label for="name"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                                <input type="text" name="name" id="name" placeholder="Your Name"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="email"><i class="zmdi zmdi-email"></i></label>
+                                <input type="email" name="email" id="email" placeholder="Your Email"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="pass"><i class="zmdi zmdi-lock"></i></label>
+                                <input type="password" name="pass" id="pass" placeholder="Password"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="re-pass"><i class="zmdi zmdi-lock-outline"></i></label>
+                                <input type="password" name="re_pass" id="re_pass" placeholder="Repeat your password"/>
+                            </div>
+                            <div class="form-group">
+                                <input type="checkbox" name="agree-term" id="agree-term" class="agree-term" />
+                                <label for="agree-term" class="label-agree-term"><span><span></span></span>I agree all statements in  <a href="#" class="term-service">Terms of service</a></label>
+                            </div>
+                            <div class="form-group form-button">
+                                <input type="submit" name="signup" id="signup" class="form-submit" value="Register"/>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="signup-image">
+                        <figure><img src="images/signup-image.jpg" alt="sing up image"></figure>
+                        <a href="#" class="signup-image-link">I am already member</a>
+                        <a name="signinf"></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+       
 
+        
+
+    <!-- JS -->
+    <script src="vendor/jquery/jquery.min.js"></script>
     <script src="js/login.js"></script>
-</div>
-
-</body>
-
+</body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 </html>
