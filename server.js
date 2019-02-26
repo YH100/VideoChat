@@ -2,6 +2,8 @@ var express = require('express');
 var browserify = require('browserify-middleware');
 var app = express();
 var bodyParser = require('body-parser');
+var sqlite3Sync = getSyncSqlite3();
+// console.log(sqlite3Sync);
 //var session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 
@@ -10,7 +12,6 @@ const sqlite3 = require('sqlite3').verbose();
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/xwww-
 //app.use(session({secret: 'XASDASDA'}));
-
 
 
 // -------------------- Socket.io --------------------
@@ -24,79 +25,8 @@ io.on("connection", () => {
 });
 
 
-
 // -------------------- Socket.io --------------------
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql++++++++++++++++++++++++++++++++++=
-function isUserInDb(email,password){
-    console.log("we are in the isUserInDb")
-    let db = new sqlite3.Database('try.db', (err) => {
-        if (err) {
-            console.error(err.message);
-            return false;
-        }
-        console.log('Connected to the in-memory SQlite database.');
-    });
-
-    var sql = "SELECT * FROM reg_user WHERE email = '" + email + "' AND password = '"+ password + "'" ;
-    console.log("sql query is: " + sql);
-    db.serialize(() => {
-        db.each(sql, (err, row) => {
-            if (err) {
-                console.error(err.message);
-            }
-            console.log(row.name + "\t" + row.password);
-            return true;
-        });
-        return false;
-    });
-    db.close((err) => {
-        if (err) {
-            console.error(err.message);
-        }
-        console.log('Close the database connection.');
-    });
-    return false;
-}
-
-function addUserInDb(name, password,email){
-    let db = new sqlite3.Database('try.db', (err) => {
-        if (err) {
-            console.error(err.message);
-            db.close((err) => {
-                if (err) {
-                    console.error(err.message);
-                }
-                console.log('Close the database connection.');
-            });
-            return false;
-        }
-        console.log('Connected to the in-memory SQlite database.');
-    });
-
-    db.run(`INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`, [name, password,email], function(err) {
-        if (err) {
-            console.log("err insert")
-            console.log(err.message);
-            //           return false;
-        }
-        console.log("insert true");
-        return true;
-
-        // get the last insert id
-        console.log(`A row has been inserted with rowid ${this.lastID}`);
-        db.close((err) => {
-            if (err) {
-                console.error(err.message);
-            }
-            console.log('Close the database connection.');
-            return true;
-        });
-
-    });
-    return true;
-}
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql+++++++++++++++++++++++++++++++++
 
 // This responds with "Hello World" on the homepage
 app.get('/', function (req, res) {
@@ -117,45 +47,272 @@ app.get('/login', function (req, res) {
     res.sendFile(__dirname + "/public/html/login.html");
 });
 
-app.post('/loginForm', function (req, res) {
+app.post('/loginForm', async function (req, res) {
     console.log('loginForm: ' + req.body);
     var userName = req.body.userName;
     var password = req.body.password;
     console.log(`got userName: ${userName}, password: ${password}`);
-    console.log("the user is in db?" + isUserInDb(userName,password))
-    if (isUserInDb(userName,password))
-    {
-        console.log("1");
-        res.sendFile(__dirname + "/public/html/login.html");
+
+    try {
+        await sqlite3Sync.open('try.db');
+        let sql = "SELECT * FROM reg_user WHERE email = '" + userName + "' AND password = '" + password + "'";
+        console.log("sql query is: " + sql);
+        r = await sqlite3Sync.get(sql);
+        var isExist = r !== undefined;
+        sqlite3Sync.close();
     }
-    res.sendStatus(404);
+    catch (e) {
+        console.error('got error: ' + e);
+        res.sendStatus(503);
+        return;
+    }
+
+    // var isExist = isUserInDb(userName, password);
+    console.log('isExist: ' + isExist);
+    if (isExist) {
+        console.log("user Exist!!!");
+        res.sendFile(__dirname + "/public/html/index.html");
+    } else {
+        res.sendStatus(404);
+    }
 });
 
-app.post('/SignUpForm', function (req, res){
+app.post('/SignUpForm', async function (req, res) {
 
     console.log('signUpForm: ' + req.body.re_pass);
     console.log('signUpForm: ' + req.body.name);
     console.log('signUpForm: ' + req.body.email);
     console.log('signUpForm: ' + req.body.pass);
-    var i = addUserInDb(req.body.name,req.body.re_pass,req.body.email);
-    console.log("i is " + i);
-    if(i){
-        res.redirect("/")
+
+    try {
+        await sqlite3Sync.open('try.db');
+        let sql = `INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`;
+        console.log("sql query is: " + sql);
+        let name = req.body.name;
+        let password = req.body.re_pass;
+        let email = req.body.email;
+        var isAdded = await sqlite3Sync.run(sql, [name, password, email]);
+        sqlite3Sync.close();
     }
-    else{
+    catch (e) {
+        console.error('got error: ' + e);
+        res.sendStatus(503);
+        return;
+    }
+
+    // var i = addUserInDb(req.body.name, req.body.re_pass, req.body.email);
+    console.log("isAdded: " + isAdded);
+    if (isAdded) {
+        res.redirect("/")
+    } else {
         res.sendStatus(404);
     }
 
 });
 
 
-
-
 app.get('/index.js', browserify('./public/index.js'));
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-var server = http.listen(8082, function () {
+var server = http.listen(8088, function () {
     var host = server.address().address;
     var port = server.address().port;
     console.log("Example app listening at http://%s:%s", host, port);
 });
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql++++++++++++++++++++++++++++++++++=
+async function isUserInDb(email, password) {
+    console.log("Execting isUserInDb")
+    let db = new sqlite3.Database('try.db', (err) => {
+        if (err) {
+            console.error(err.message);
+            return false;
+        }
+        console.log('Connected to the in-memory SQlite database.');
+    });
+
+    let sql = "SELECT * FROM reg_user WHERE email = '" + email + "' AND password = '" + password + "'";
+    console.log("sql query is: " + sql);
+
+    // var isUserExist = false;
+    // db.get(sql, [], (err, row) => {
+    //     if (err) {
+    //         throw err;
+    //     }
+    //     var res = row !== undefined;
+    //     console.log('res = ' + res);
+    //     isUserExist = res;
+    // });
+
+    function checkIfUserExist() {
+        return new Promise(function (resolve, reject) {
+            db.get(sql, [], (err, row) => {
+                if (err) {
+                    throw err;
+                }
+                var isUserExist = row !== undefined;
+                resolve(isUserExist);
+            });
+
+            db.close((err) => {
+                if (err) {
+                    console.error(err.message);
+                }
+                console.log('Close the database connection.');
+            });
+        });
+    }
+
+    // myPromise.then(function(value) {
+    //     console.log('result from promise is: ' + value);
+    // });
+
+    // db.serialize(() => {
+    //     db.each(sql, (err, row) => {
+    //         if (err) {
+    //             console.error(err.message);
+    //         }
+    //         console.log(row.name + "\t" + row.password);
+    //         return true;
+    //     });
+    //     return false;
+    // });
+
+
+    var result = checkIfUserExist();
+    console.log("return from await: " + result);
+    return result;
+}
+
+async function addUserInDb(name, password, email) {
+    let db = new sqlite3.Database('try.db', (err) => {
+        if (err) {
+            console.error(err.message);
+            db.close((err) => {
+                if (err) {
+                    console.error(err.message);
+                }
+                console.log('Close the database connection.');
+            });
+            return false;
+        }
+        console.log('Connected to the in-memory SQlite database.');
+    });
+
+
+    function insertAsync() {
+        return new Promise(function (resolve, reject) {
+            db.run(`INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`, [name, password, email], function (err) {
+                if (err) {
+                    console.log("err insert: " + err.message);
+                    reject(err);
+                } else {
+                    // get the last insert id
+                    console.log(`A row has been inserted with rowid: ${this.lastID}`);
+                    db.close((err) => {
+                        if (err) {
+                            console.error(err.message);
+                        }
+                        console.log('Close the database connection.');
+                        return true;
+                    });
+                    resolve();
+                }
+            });
+        });
+    }
+
+    var isUserInserted = true;
+    var res = await insertAsync().catch((err) => {
+        console.log(err);
+        isUserInserted = false;
+    });
+    console.log('res = ' + res);
+    console.log('return from async function addUserInDb is: ' + isUserInserted);
+    return isUserInserted;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql+++++++++++++++++++++++++++++++++
+
+
+function getSyncSqlite3() {
+    const sqlite3 = require('sqlite3').verbose()
+    var db = {};
+    db.open = function (path) {
+        return new Promise(function (resolve) {
+            this.db = new sqlite3.Database(path,
+                function (err) {
+                    if (err) reject("Open error: " + err.message)
+                    else resolve(path + " opened")
+                }
+            )
+        })
+    };
+
+// any query: insert/delete/update
+    db.run = function (query, params) {
+        return new Promise(function (resolve, reject) {
+            this.db.run(query, params,
+                function (err) {
+                    if (err) reject(err.message)
+                    else resolve(true)
+                })
+        })
+    };
+
+
+// first row read
+    db.get = function (query, params) {
+        return new Promise(function (resolve, reject) {
+            this.db.get(query, params, function (err, row) {
+                if (err) reject("Read error: " + err.message)
+                else {
+                    resolve(row)
+                }
+            })
+        })
+    };
+
+// set of rows read
+    db.all = function (query, params) {
+        return new Promise(function (resolve, reject) {
+            if (params == undefined) params = []
+
+            this.db.all(query, params, function (err, rows) {
+                if (err) reject("Read error: " + err.message)
+                else {
+                    resolve(rows)
+                }
+            })
+        })
+    };
+
+// each row returned one by one
+    db.each = function (query, params, action) {
+        return new Promise(function (resolve, reject) {
+            var db = this.db
+            db.serialize(function () {
+                db.each(query, params, function (err, row) {
+                    if (err) reject("Read error: " + err.message)
+                    else {
+                        if (row) {
+                            action(row)
+                        }
+                    }
+                })
+                db.get("", function (err, row) {
+                    resolve(true)
+                })
+            })
+        })
+    };
+
+    db.close = function () {
+        return new Promise(function (resolve, reject) {
+            this.db.close()
+            resolve(true)
+        })
+    };
+    return db;
+}
