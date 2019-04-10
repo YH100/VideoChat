@@ -1,17 +1,28 @@
 var express = require('express');
 var browserify = require('browserify-middleware');
+var session = require('express-session');
 var app = express();
 var bodyParser = require('body-parser');
 var sqlite3Sync = getSyncSqlite3();
-// console.log(sqlite3Sync);
-//var session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
+var flash = require('connect-flash-plus');
+var redis = require("redis");
 
 
 //app.use(express.static('public'));
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/xwww-
-//app.use(session({secret: 'XASDASDA'}));
+//app.use(session(
+//    {"secret": '343ji43j4n3jn4jk3n'})
+//);
+app.use(flash())
+app.set('view engine', 'ejs');
+app.use(session({
+    secret: 'keyboard cat',
+    cookie: {maxAge: 60000}
+}));
+
+app.use(flash());
 
 
 // -------------------- Socket.io --------------------
@@ -20,20 +31,77 @@ app.use(bodyParser.urlencoded({extended: true})); // for parsing application/xww
 // socketEvents(io);
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
-io.on("connection", () => {
-    console.log("a user is connected");
+var clients = [];
+io.sockets.on('connection', function (socket) {
+    console.log(clients);
+    console.log('a user connected');
+
+    socket.on('disconnect', function () {
+        console.log('user disconnected');
+    });
+
+    socket.on('add-user', function (data) {
+        console.log("Adding new user, details:  " + data);
+        clients[data.email] = {
+            "socket": socket.id
+        };
+        console.log(clients);
+    });
+
+    socket.on('startVideoChat', function (data) {
+        console.log('new request to start video: ' + data);
+        console.log('data value: targetEmail: ' + data.targetEmail + ", userEmail: " + data.userEmail);
+        console.log('--------------------------------');
+        console.log('peerId: ' + data.peerId);
+        console.log('--------------------------------');
+
+        // sending to individual socketid
+
+        var targetUserSocket = clients[data.targetEmail].socket;
+        console.log('targetUserSocket is: ' + targetUserSocket + ' of mail: ' + data.targetEmail);
+        socket.broadcast.to(targetUserSocket).emit('askForVideoChat', {
+            requesterCode: data.peerId,
+            requesterEmail: data.userEmail
+        });
+    });
+
+
+    socket.on('answareVideoChat', function (data) {
+        console.log('answare to start video: ' + data);
+        console.log('data value: originalEmail: ' + data.originalEmail);
+        console.log('--------------------------------');
+        console.log('answaredId: ' + data.answaredId);
+        console.log('--------------------------------');
+
+        // sending to individual socketid
+        var originalUserSocket = clients[data.originalEmail].socket;
+        console.log('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
+        socket.broadcast.to(originalUserSocket).emit('ansForVideoChat', {
+            peerId: data.answaredId
+        });
+    });
+
+
+    // socket.on('chat message', function (msg) {
+    //     console.log('message: ' + msg);
+    //     io.emit('chat message', msg);
+    // });
+
 });
 
 
 // -------------------- Socket.io --------------------
 
-
+//
 // This responds with "Hello World" on the homepage
 app.get('/', function (req, res) {
     app.use(express.static(__dirname + '/' + 'public'));
     console.log("");
     console.log("-------------------- Got a GET request for the homepage -------------------");
-    res.sendFile(__dirname + "/" + "index.html");
+    console.log("the ssn");
+    console.log("ssn is " + req.session.email);
+    let msg = "this i msg";
+    res.render("profile", {person: req.session.email, message: msg});
 });
 
 app.get('/example', (req, res) => {
@@ -60,8 +128,7 @@ app.post('/loginForm', async function (req, res) {
         r = await sqlite3Sync.get(sql);
         var isExist = r !== undefined;
         sqlite3Sync.close();
-    }
-    catch (e) {
+    } catch (e) {
         console.error('got error: ' + e);
         res.sendStatus(503);
         return;
@@ -71,7 +138,8 @@ app.post('/loginForm', async function (req, res) {
     console.log('isExist: ' + isExist);
     if (isExist) {
         console.log("user Exist!!!");
-        res.sendFile(__dirname + "/public/html/index.html");
+        req.session.email = userName;
+        res.redirect('/');
     } else {
         res.sendStatus(404);
     }
@@ -93,8 +161,7 @@ app.post('/SignUpForm', async function (req, res) {
         let email = req.body.email;
         var isAdded = await sqlite3Sync.run(sql, [name, password, email]);
         sqlite3Sync.close();
-    }
-    catch (e) {
+    } catch (e) {
         console.error('got error: ' + e);
         res.sendStatus(503);
         return;
@@ -114,7 +181,7 @@ app.post('/SignUpForm', async function (req, res) {
 app.get('/index.js', browserify('./public/index.js'));
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-var server = http.listen(8088, function () {
+var server = http.listen(8081, function () {
     var host = server.address().address;
     var port = server.address().port;
     console.log("Example app listening at http://%s:%s", host, port);
@@ -233,9 +300,6 @@ async function addUserInDb(name, password, email) {
     return isUserInserted;
 }
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql+++++++++++++++++++++++++++++++++
-
-
 function getSyncSqlite3() {
     const sqlite3 = require('sqlite3').verbose()
     var db = {};
@@ -316,3 +380,5 @@ function getSyncSqlite3() {
     };
     return db;
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql++++++++++++++++++++++++++++++++++=

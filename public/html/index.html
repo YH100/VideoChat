@@ -19,12 +19,33 @@
 <button id="send">send</button>
 <pre id="messages"></pre>
 
+
+
+<form id="send-message">
+ Enter partner email
+    <input id="message">
+    <input type="submit">
+    <button onclick="ab()">cl</button>
+</form>
+
+<script src="nunjucks.js"></script>
+<script>
+    var mm;
+</script>
+<h1>"the"
+    h2 = mm</h1>
+
+
 <script src="index.js" charset="utf-8"></script>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="nunjucks.js"></script>
 
 <script language="JavaScript">
     var socket = io();
-    socket.on("message", addMessages);
-
+    function ab (){
+        socket.on("send message", document.getElementById("yourId").value);
+    };
     // window.onload = function() {
     //   var sendButton = document.getElementById("btnSend");
     //   sendButton.addEventListener("click", function() {
@@ -38,10 +59,12 @@
     //     }
     //   });
     // };
+    socket.on("new message",function (data) {
+        window.alert(data);
+    })
 
-    function addMessages(message) {
-        alert(message);
-    }
+
 </script>
+
 </body>
 </html>

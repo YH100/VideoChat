@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" charset="utf-8"></script>
+</head>
+<body>
+
+<label>Your ID:</label><br/>
+<textarea id="yourId"></textarea><br/>
+<label>Other ID:</label><br/>
+<textarea id="otherId"></textarea>
+<button id="connect">connect</button>
+<br/>
+
+<label>Enter Message:</label><br/>
+<textarea id="yourMessage"></textarea>
+<button id="send">send</button>
+<pre id="messages"></pre>
+
+
+<ul id="messages"></ul>
+<hr/>
+<form action="">
+    Please enter partner email: <input id="targetEmail" autocomplete="off"/>
+    <br/><br/>
+    Please enter your video id: <input id="myVideoId" autocomplete="off"/>
+    <br/> <br/>
+    <button id="start">Start Conversation</button>
+</form>
+<hr/>
+
+
+<script src="nunjucks.js"></script>
+
+
+<script src="index.js" charset="utf-8"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="nunjucks.js"></script>
+
+<script language="JavaScript">
+    $(function () {
+        var userEmail = '<%= person %>';
+
+        var socket = io();
+        $('form').submit(function (e) {
+            e.preventDefault(); // prevents page reloading
+            socket.emit('startVideoChat', {
+                targetEmail: $('#targetEmail').val(),
+                peerId: $('#yourId').val(),
+                userEmail: userEmail
+            });
+            $('#targetEmail').val('');
+            $('#myVideoId').val('');
+            return false;
+        });
+
+        socket.on('chat message', function (msg) {
+            $('#messages').append($('<li>').text(msg));
+        });
+
+        socket.on('askForVideoChat', function (msg) {
+            console.log('asked for video chat: ' + msg);
+
+            var otherPeerId = msg.requesterCode;
+            var requesterEmail = msg.requesterEmail;
+            window.alert(requesterEmail + " asked for video chat");
+
+            $('#otherId').val(otherPeerId)
+            $('#connect').click();
+
+            setTimeout(function () {
+                var myId = $('#yourId').val();
+                console.log('myId: ' + myId);
+                console.log('requesterEmail: ' + requesterEmail);
+
+                socket.emit('answareVideoChat', {
+                    originalEmail: requesterEmail,
+                    answaredId: myId
+                });
+            }, 1000);
+        });
+
+        socket.on('ansForVideoChat', function (msg) {
+            console.log('answare for video chat: ' + msg);
+
+            var otherPeerId = msg.peerId;
+            $('#otherId').val(otherPeerId)
+            $('#connect').click();
+        });
+
+
+        console.log('User email is: ' + userEmail);
+        socket.emit('add-user', {email: userEmail});
+    });
+
+
+    window.onload = function() {
+      var sendButton = document.getElementById("btnSend");
+      sendButton.addEventListener("click", function() {
+        var textElement = document.getElementById("textfield");
+        var message = textElement.value;
+        textElement.value = '';
+        if (message && message.length != 0)
+        {
+          var encryptedMessage = aesObject.encrypt(message);
+          socket.emit('text', {msg: encryptedMessage, userName: userName, userPhoto: userPhoto});
+        }
+      });
+    };
+
+
+</script>
+
+<%= person %>
+the mm
+<% if (message) { %>
+    <p><%= message %></p>
+<% } %>
+
+</body>
+</html>
