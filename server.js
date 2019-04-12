@@ -1,3 +1,4 @@
+// -------------------- Requires --------------------
 var express = require('express');
 var browserify = require('browserify-middleware');
 var session = require('express-session');
@@ -7,9 +8,10 @@ var sqlite3Sync = getSyncSqlite3();
 const sqlite3 = require('sqlite3').verbose();
 var flash = require('connect-flash-plus');
 var redis = require("redis");
+const util = require('util')
 
-
-//app.use(express.static('public'));
+// -------------------- app.use --------------------
+// app.use(express.static('public'));
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/xwww-
 //app.use(session(
@@ -21,7 +23,6 @@ app.use(session({
     secret: 'keyboard cat',
     cookie: {maxAge: 60000}
 }));
-
 app.use(flash());
 
 
@@ -31,7 +32,7 @@ app.use(flash());
 // socketEvents(io);
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
-var clients = [];
+var clients = {};
 io.sockets.on('connection', function (socket) {
     console.log(clients);
     console.log('a user connected');
@@ -41,12 +42,18 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on('add-user', function (data) {
-        console.log("Adding new user, details:  " + data);
+        console.log("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
+
+        console.log('clients: ' + clients);
         clients[data.email] = {
             "socket": socket.id
         };
-        console.log(clients);
+        console.log('clients: ' + clients);
+        io.emit('newUserConnected', {
+            allClients: clients
+        });
     });
+
 
     socket.on('startVideoChat', function (data) {
         console.log('new request to start video: ' + data);
@@ -65,7 +72,6 @@ io.sockets.on('connection', function (socket) {
         });
     });
 
-
     socket.on('answareVideoChat', function (data) {
         console.log('answare to start video: ' + data);
         console.log('data value: originalEmail: ' + data.originalEmail);
@@ -81,18 +87,14 @@ io.sockets.on('connection', function (socket) {
         });
     });
 
-
     // socket.on('chat message', function (msg) {
     //     console.log('message: ' + msg);
     //     io.emit('chat message', msg);
     // });
-
 });
 
 
-// -------------------- Socket.io --------------------
-
-//
+// -------------------- Routes --------------------
 // This responds with "Hello World" on the homepage
 app.get('/', function (req, res) {
     app.use(express.static(__dirname + '/' + 'public'));
@@ -100,7 +102,7 @@ app.get('/', function (req, res) {
     console.log("-------------------- Got a GET request for the homepage -------------------");
     console.log("the ssn");
     console.log("ssn is " + req.session.email);
-    let msg = "this i msg";
+    let msg = "test";
     res.render("profile", {person: req.session.email, message: msg});
 });
 
@@ -177,18 +179,19 @@ app.post('/SignUpForm', async function (req, res) {
 
 });
 
-
 app.get('/index.js', browserify('./public/index.js'));
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// -------------------- Start Server --------------------
+console.log('Site Directory Name: ' + __dirname)
 var server = http.listen(8081, function () {
     var host = server.address().address;
     var port = server.address().port;
-    console.log("Example app listening at http://%s:%s", host, port);
+    console.log("Video Chat App listening at http://%s:%s", host, port);
 });
 
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql++++++++++++++++++++++++++++++++++=
+// -------------------- Data Base --------------------
 async function isUserInDb(email, password) {
     console.log("Execting isUserInDb")
     let db = new sqlite3.Database('try.db', (err) => {
@@ -344,7 +347,8 @@ function getSyncSqlite3() {
             if (params == undefined) params = []
 
             this.db.all(query, params, function (err, rows) {
-                if (err) reject("Read error: " + err.message)
+                if (err)
+                    reject("Read error: " + err.message);
                 else {
                     resolve(rows)
                 }
@@ -380,5 +384,3 @@ function getSyncSqlite3() {
     };
     return db;
 }
-
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++sql++++++++++++++++++++++++++++++++++=
