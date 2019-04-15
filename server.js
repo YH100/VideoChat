@@ -39,21 +39,42 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('disconnect', function () {
         console.log('user disconnected');
+        console.log('deleting user, with socket id: ' + socket.id);
+
+        console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
+        var userEmail = getUserEmailBySocketId(clients, socket.id);
+        console.log('the user email is: ' + userEmail);
+        delete clients[userEmail];
+        console.log('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
+
+        io.emit('contactListChanged', {
+            allClients: clients
+        });
     });
 
     socket.on('add-user', function (data) {
         console.log("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
 
-        console.log('clients: ' + clients);
+        console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
         clients[data.email] = {
             "socket": socket.id
         };
-        console.log('clients: ' + clients);
-        io.emit('newUserConnected', {
+        console.log('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
+        io.emit('contactListChanged', {
             allClients: clients
         });
     });
 
+    // socket.on('left-user', function (data) {
+    //     console.log("deleting user, details:  " + util.inspect(data, false, null, true /* enable colors */));
+    //
+    //     console.log('clients before: ' + clients);
+    //     delete clients[data.email];
+    //     console.log('clients after: ' + clients);
+    //     io.emit('contactListChanged', {
+    //         allClients: clients
+    //     });
+    // });
 
     socket.on('startVideoChat', function (data) {
         console.log('new request to start video: ' + data);
@@ -383,4 +404,15 @@ function getSyncSqlite3() {
         })
     };
     return db;
+}
+
+function getUserEmailBySocketId(allClients, socketId) {
+    console.log('start');
+    for (var key in allClients) {
+        console.log(key);
+        if (allClients.hasOwnProperty(key)) {
+            if (allClients[key].socket === socketId)
+                return key;
+        }
+    }
 }

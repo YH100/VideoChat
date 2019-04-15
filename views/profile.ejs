@@ -8,6 +8,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
             integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
             crossorigin="anonymous"></script>
+    <script src="index.js" charset="utf-8"></script>
     <!--<script src="nunjucks.js"></script>-->
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
@@ -15,36 +16,86 @@
     <link rel="stylesheet" href="css/profile_style.css">
 </head>
 <body>
+<div align="center" id="body">
+    <br/><br/>
+    <table border="0" width="80%" id="main">
+        <tr>
+            <td width="22%">
+                <h5>My Contacts</h5>
+                <input type="button" value="+" id="addNewContact"/>
+                <input type="test" placeholder="search" value="" id="search"/>
+                <div id="contactList">
+                    <!--
+                    <button class="chip">
+                        <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
+                        John Doe
+                    </button>
+                    -->
+                </div>
+            </td>
+
+            <td width="50%" height="400px"
+                style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUx425bwobI-THkOIOBxKNX6PLRO4ZHR8HGzY2IyLcB7cHjqyx')">
+                <!--<img id="logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUx425bwobI-THkOIOBxKNX6PLRO4ZHR8HGzY2IyLcB7cHjqyx" />-->
+
+                <video id="videoMain">
+
+                </video>
+                <br/>
+                <button type="button" class="btn btn-danger" id="endCall" style="visibility: hidden;">End Call</button>
+            </td>
+
+            <td>
+                <h5>Chat Messages</h5>
+                <div class="chatbox">
+
+                    <div id="chatlogs" class="chatlogs">
+
+                    </div>
+                    <!-- <form action="http://localhost:5000/message" class="form" method="post"> -->
+                    <form action="" class="form" method="post" onSubmit="return false">
+                        <div class="chat-form">
+                            <input id="textfield" placeholder="Write your message here" name="messagefield" type="text">
+                            <button id="btnSend">Send</button>
+                            <input type="hidden" value="foo" name="user_id"/>
+                        </div>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+</div>
+<hr/>
 
 
-<div id="contactList">
-    <button class="chip">
-        <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
-        John Doe
-    </button>
-    <br>
-    <button class="chip">
-        <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
-        John Doe
-    </button>
-    <br>
-    <button class="chip">
-        <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
-        John Doe
-    </button>
+<!-- ----------------------------------------------------------------------------------------------------------  -->
+
+
+<!-- ----------------------------------------------------------------------------------------------------------  -->
+
+<div class="spinner-border" role="status">
+    <span class="sr-only">Loading...</span>
 </div>
 
+<div class="spinner-grow" role="status">
+    <span class="sr-only">Loading...</span>
+</div>
+
+<!-- ----------------------------------------------------------------------------------------------------------  -->
 
 <div id="callWindow" style="display: none;">
     <div class="alert alert-success" role="alert">
         <div style="text-align: center;">
             Incoming call from <strong><label id="callerName"></label></strong>
             <br/><br/>
-            <button type="button" class="btn btn-success">Answare</button>
-            <button type="button" class="btn btn-danger">Deny</button>
+            <button type="button" class="btn btn-success" id="answer">Answer</button>
+            <button type="button" class="btn btn-danger" id="deny">Deny</button>
         </div>
     </div>
 </div>
+
+<!-- ----------------------------------------------------------------------------------------------------------  -->
 
 <hr/>
 <br/><br/><br/>
@@ -64,22 +115,24 @@
 
 <ul id="messages"></ul>
 <hr/>
-<form action="">
+<form action="" id="videoChatForm">
     Please enter partner email: <input id="targetEmail" autocomplete="off"/>
     <br/><br/>
     Please enter your video id: <input id="myVideoId" autocomplete="off"/>
     <br/> <br/>
-    <button id="start">Start Conversation</button>
+    <!--<button id="start">Start Conversation</button>-->
+    <input type="submit" id="startConversation" value="Start Conversation"/>
 </form>
 <hr/>
 
 
-<script src="index.js" charset="utf-8"></script>
-
+<div id="myvid">
+    dsfdsf123
+</div>
 
 <script language="JavaScript">
+    var userEmail = '<%= person %>';
     $(function () {
-        var userEmail = '<%= person %>';
 
         var socket = io();
         $('form').submit(function (e) {
@@ -94,9 +147,9 @@
             return false;
         });
 
-        socket.on('newUserConnected', function (msg) {
+        socket.on('contactListChanged', function (msg) {
             // $('#messages').append($('<li>').text(msg));
-            console.log('newUserConnected, all clients: ' + JSON.stringify(msg.allClients));
+            console.log('contactListChanged, all clients: ' + JSON.stringify(msg.allClients));
             createContactList(msg.allClients);
         });
 
@@ -106,27 +159,37 @@
 
         socket.on('askForVideoChat', function (msg) {
             console.log('asked for video chat: ' + msg);
-            document.getElementById('callerName').value = msg.requesterEmail;
+            document.getElementById('callerName').textContent = msg.requesterEmail;
             document.getElementById('callWindow').style.display = "block"; // block / inline
             //TODO: map email to name
 
-            var otherPeerId = msg.requesterCode;
-            var requesterEmail = msg.requesterEmail;
-            window.alert(requesterEmail + " asked for video chat");
+            document.getElementById('answer').onclick = function () {
+                document.getElementById('callWindow').style.display = "none";
+                userAnswer();
+            };
 
-            $('#otherId').val(otherPeerId)
-            $('#connect').click();
+            document.getElementById('deny').onclick = function () {
+                document.getElementById('callWindow').style.display = "none";
+            };
 
-            setTimeout(function () {
-                var myId = $('#yourId').val();
-                console.log('myId: ' + myId);
-                console.log('requesterEmail: ' + requesterEmail);
+            function userAnswer() {
+                var otherPeerId = msg.requesterCode;
+                var requesterEmail = msg.requesterEmail;
+                // window.alert(requesterEmail + " asked for video chat");
+                $('#otherId').val(otherPeerId)
+                $('#connect').click();
 
-                socket.emit('answareVideoChat', {
-                    originalEmail: requesterEmail,
-                    answaredId: myId
-                });
-            }, 1000);
+                setTimeout(function () {
+                    var myId = $('#yourId').val();
+                    console.log('myId: ' + myId);
+                    console.log('requesterEmail: ' + requesterEmail);
+
+                    socket.emit('answareVideoChat', {
+                        originalEmail: requesterEmail,
+                        answaredId: myId
+                    });
+                }, 1000);
+            }
         });
 
         socket.on('ansForVideoChat', function (msg) {
@@ -141,8 +204,19 @@
         socket.emit('add-user', {email: userEmail});
     });
 
-
     window.onload = function () {
+        console.log("Chat page has been loaded");
+
+        $('#endCall').click(function () {
+            var r = confirm('are you sure you want to end this call?')
+            if (r == true) {
+                $('#endCall')[0].style.visibility = 'hidden';
+                $('#videoMain')[0].srcObject = null;
+                window.initiateVideoChat();
+            }
+        });
+
+
         // var sendButton = document.getElementById("btnSend");
         // sendButton.addEventListener("click", function () {
         //     var textElement = document.getElementById("textfield");
@@ -155,8 +229,9 @@
         // });
     };
 
-
-
+    window.onbeforeunload = function () {
+        // socket.emit('left-user', {email: userEmail});
+    };
 
     function createContactList(users) {
         var contactListDiv = document.getElementById("contactList");
@@ -167,6 +242,23 @@
         for (var email in users) {
             var button = document.createElement("button");
             button.className = "chip";
+            button.onclick = function () {
+                window.location.href = "http://" + location.hostname + ":8081/#init";
+                window.initiateVideoChat();
+
+                setTimeout(function () {
+                    // document.getElementById("videoChatForm").submit();
+                    // $('form').submit();
+                    $('#targetEmail').val(email)
+                    $('#startConversation').click();
+                }, 6000);
+
+            };
+
+            if (email == userEmail) {
+                button.disabled = true;
+            }
+
 
             var textNode = document.createTextNode(email);
             button.appendChild(textNode);
@@ -184,10 +276,32 @@
             contactListDiv.appendChild(br);
         }
     }
+
+    function addNewMessage(message, isOwner) {
+        var chatsDiv = document.getElementById("chatlogs");
+        var node = document.createElement("div");
+
+        if (isOwner)
+            node.className = "chat self";
+        else
+            node.className = "chat friend";
+
+        var innerDiv = document.createElement("div");
+        var photo = document.createElement("img");
+        photo.src = 'https://www.w3schools.com/howto/img_avatar.png';
+        innerDiv.appendChild(photo);
+        innerDiv.className = "user-photo";
+        var innerP = document.createElement("p");
+        innerP.className = "chat-message";
+        node.appendChild(innerDiv);
+        node.appendChild(innerP);
+        var textNode = document.createTextNode(message);
+        innerP.appendChild(textNode);
+        chatsDiv.appendChild(node);
+    }
 </script>
 
-<%=person %>
-the mm
+<%= person %>
 <% if (message) { %>
     <p><%= message %></p>
 <% } %>
