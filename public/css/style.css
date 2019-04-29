@@ -591,3 +591,7 @@ label.valid {
     margin-bottom: 10px; } }
 
 /*# sourceMappingURL=style.css.map */
+input::-webkit-input-placeholder {
+  font-size: 20px;
+  line-height: 3;
+}

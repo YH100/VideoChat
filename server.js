@@ -32,13 +32,15 @@ app.use(flash());
 // socketEvents(io);
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
-var clients = {};
+var clients = {}; // { email -> {"socket": 12345} }
+var clientsOnCall = new Set();
+
 io.sockets.on('connection', function (socket) {
-    console.log(clients);
-    console.log('a user connected');
+    console.log('new user connected');
+    console.log("Clients state: " + util.inspect(clients, false, null, true /* enable colors */));
 
     socket.on('disconnect', function () {
-        console.log('user disconnected');
+        console.log('Socket io function: disconnect');
         console.log('deleting user, with socket id: ' + socket.id);
 
         console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
@@ -50,9 +52,11 @@ io.sockets.on('connection', function (socket) {
         io.emit('contactListChanged', {
             allClients: clients
         });
+        console.log('--------------------------------');
     });
 
     socket.on('add-user', function (data) {
+        console.log('Socket io function: add-user');
         console.log("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
 
         console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
@@ -63,6 +67,7 @@ io.sockets.on('connection', function (socket) {
         io.emit('contactListChanged', {
             allClients: clients
         });
+        console.log('--------------------------------');
     });
 
     // socket.on('left-user', function (data) {
@@ -77,35 +82,65 @@ io.sockets.on('connection', function (socket) {
     // });
 
     socket.on('startVideoChat', function (data) {
+        console.log('Socket io function: startVideoChat');
         console.log('new request to start video: ' + data);
         console.log('data value: targetEmail: ' + data.targetEmail + ", userEmail: " + data.userEmail);
         console.log('--------------------------------');
-        console.log('peerId: ' + data.peerId);
+        console.log('peerId: ' + data.peerId.substring(0, 20));
         console.log('--------------------------------');
 
         // sending to individual socketid
 
-        var targetUserSocket = clients[data.targetEmail].socket;
-        console.log('targetUserSocket is: ' + targetUserSocket + ' of mail: ' + data.targetEmail);
-        socket.broadcast.to(targetUserSocket).emit('askForVideoChat', {
-            requesterCode: data.peerId,
-            requesterEmail: data.userEmail
-        });
+
+        if (!clients.hasOwnProperty(data.targetEmail))
+            console.log(`user ${data.userEmail} tried to call: ${data.targetEmail}, but he is not exist in the server! clients: ${util.inspect(clients, false, null, true)}`);
+        else {
+            var targetUserSocket = clients[data.targetEmail].socket;
+            console.log('targetUserSocket is: ' + targetUserSocket + ' of mail: ' + data.targetEmail);
+            socket.broadcast.to(targetUserSocket).emit('askForVideoChat', {
+                requesterCode: data.peerId,
+                requesterEmail: data.userEmail
+            });
+        }
+        console.log('--------------------------------');
     });
 
     socket.on('answareVideoChat', function (data) {
+        console.log('Socket io function: answareVideoChat');
         console.log('answare to start video: ' + data);
         console.log('data value: originalEmail: ' + data.originalEmail);
-        console.log('--------------------------------');
-        console.log('answaredId: ' + data.answaredId);
-        console.log('--------------------------------');
+        console.log('answaredId: ' + data.answaredId.substring(0, 20));
 
         // sending to individual socketid
-        var originalUserSocket = clients[data.originalEmail].socket;
-        console.log('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
-        socket.broadcast.to(originalUserSocket).emit('ansForVideoChat', {
-            peerId: data.answaredId
-        });
+
+        if (!clients.hasOwnProperty(data.originalEmail))
+            console.log(`user ${data.originalEmail} in the server! clients: ${util.inspect(clients, false, null, true)}`);
+        else {
+            var originalUserSocket = clients[data.originalEmail].socket;
+            console.log('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
+            socket.broadcast.to(originalUserSocket).emit('ansForVideoChat', {
+                peerId: data.answaredId
+            });
+        }
+        console.log('--------------------------------');
+    });
+
+    socket.on('videoChatCreated', function (data) {
+        console.log('Socket io function: videoChatCreated');
+        clientsOnCall.add(data.originalUser);
+        clientsOnCall.add(data.targetUser);
+        console.log('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
+        io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
+        console.log('--------------------------------');
+    });
+
+    socket.on('endCall', function (data) {
+        console.log('Socket io function: endCall');
+        clientsOnCall.delete(data.originalUser);
+        // clientsOnCall.delete(OTHER);
+        console.log('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
+        io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
+        console.log('--------------------------------');
     });
 
     // socket.on('chat message', function (msg) {

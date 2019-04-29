@@ -18,10 +18,23 @@
 <body>
 <div align="center" id="body">
     <br/><br/>
-    <table border="0" width="80%" id="main">
+    <!-- ----------------------------------------------------------------------------------------------------------  -->
+
+    <div id="callWindow" style="display: none;">
+        <div class="alert alert-success" role="alert">
+            <div style="text-align: center;">
+                Incoming call from <strong><label id="callerName"></label></strong>
+                <br/><br/>
+                <button type="button" class="btn btn-success" id="answer">Answer</button>
+                <button type="button" class="btn btn-danger" id="deny">Deny</button>
+            </div>
+        </div>
+    </div>
+
+    <table border="0" width="88%" id="main">
         <tr>
-            <td width="22%">
-                <h5>My Contacts</h5>
+            <td width="30%">
+                <h5>Hello: <b><%= person %></b><br/>My Contacts</h5>
                 <input type="button" value="+" id="addNewContact"/>
                 <input type="test" placeholder="search" value="" id="search"/>
                 <div id="contactList">
@@ -35,8 +48,8 @@
             </td>
 
             <td width="50%" height="400px"
-                style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUx425bwobI-THkOIOBxKNX6PLRO4ZHR8HGzY2IyLcB7cHjqyx')">
-                <!--<img id="logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUx425bwobI-THkOIOBxKNX6PLRO4ZHR8HGzY2IyLcB7cHjqyx" />-->
+                style="background-image: url('https://edge.androidcommunity.com/wp-content/uploads/2016/01/booyah.jpg')">
+                <!--<img id="logo" src="http://i63.tinypic.com/vz92y8.png" />-->
 
                 <video id="videoMain">
 
@@ -84,19 +97,6 @@
 
 <!-- ----------------------------------------------------------------------------------------------------------  -->
 
-<div id="callWindow" style="display: none;">
-    <div class="alert alert-success" role="alert">
-        <div style="text-align: center;">
-            Incoming call from <strong><label id="callerName"></label></strong>
-            <br/><br/>
-            <button type="button" class="btn btn-success" id="answer">Answer</button>
-            <button type="button" class="btn btn-danger" id="deny">Deny</button>
-        </div>
-    </div>
-</div>
-
-<!-- ----------------------------------------------------------------------------------------------------------  -->
-
 <hr/>
 <br/><br/><br/>
 
@@ -132,9 +132,12 @@
 
 <script language="JavaScript">
     var userEmail = '<%= person %>';
+    window.originalUser = userEmail;
+    var clientsOnCall
     $(function () {
 
         var socket = io();
+        window.socket = socket;
         $('form').submit(function (e) {
             e.preventDefault(); // prevents page reloading
             socket.emit('startVideoChat', {
@@ -198,11 +201,32 @@
             var otherPeerId = msg.peerId;
             $('#otherId').val(otherPeerId)
             $('#connect').click();
+
+            socket.emit('videoChatCreated', {
+                originalUser: window.originalUser,
+                targetUser: window.targerUser
+            });
+        });
+
+        socket.on('clientsOnCallUpdate', function (data) {
+            console.log('clientsOnCallUpdate data: ' + data);
+            clientsOnCall = data;
         });
 
         console.log('User email is: ' + userEmail);
         socket.emit('add-user', {email: userEmail});
     });
+
+    function endCallFunc() {
+        // Clear old conversation
+        var chatsDiv = document.getElementById("chatlogs");
+        chatsDiv.innerHTML = '';
+
+        $('#endCall')[0].style.visibility = 'hidden';
+        $('#videoMain')[0].srcObject = null;
+        window.initiateVideoChat();
+        window.socket.emit('endCall', {originalUser: window.originalUser});
+    }
 
     window.onload = function () {
         console.log("Chat page has been loaded");
@@ -210,9 +234,9 @@
         $('#endCall').click(function () {
             var r = confirm('are you sure you want to end this call?')
             if (r == true) {
-                $('#endCall')[0].style.visibility = 'hidden';
-                $('#videoMain')[0].srcObject = null;
-                window.initiateVideoChat();
+                endCallFunc();
+                $('#textfield')[0].value = 'END_CALL';
+                $('#btnSend').click();
             }
         });
 
@@ -239,20 +263,26 @@
             return;
         contactListDiv.innerHTML = '';
 
-        for (var email in users) {
+        for (let email in users) {
             var button = document.createElement("button");
             button.className = "chip";
             button.onclick = function () {
+                var currentUserEmail = email;
+                if (clientsOnCall && clientsOnCall.indexOf(currentUserEmail) != -1) {
+                    alert(`User: ${currentUserEmail} is already in a call and cant accept your request`);
+                    return;
+                }
+
                 window.location.href = "http://" + location.hostname + ":8081/#init";
                 window.initiateVideoChat();
 
                 setTimeout(function () {
                     // document.getElementById("videoChatForm").submit();
                     // $('form').submit();
-                    $('#targetEmail').val(email)
+                    $('#targetEmail').val(currentUserEmail)
+                    window.targerUser = currentUserEmail;
                     $('#startConversation').click();
                 }, 6000);
-
             };
 
             if (email == userEmail) {
@@ -278,6 +308,11 @@
     }
 
     function addNewMessage(message, isOwner) {
+        if (message == 'END_CALL') {
+            endCallFunc();
+            return;
+        }
+
         var chatsDiv = document.getElementById("chatlogs");
         var node = document.createElement("div");
 

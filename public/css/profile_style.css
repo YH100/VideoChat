@@ -4,6 +4,11 @@ body {
     background-repeat: no-repeat;*/
 }
 
+td{
+    background-repeat: no-repeat;
+    background-position: center;
+    align:"left";
+}
 .chip {
     display: inline-block;
     padding: 0 25px;
@@ -24,7 +29,7 @@ body {
 }
 
 .alert {
-    width: 40%;
+    /*width: 40%;*/
     align-content: center;
 }
 
