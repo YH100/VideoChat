@@ -11,13 +11,12 @@ var redis = require("redis");
 const util = require('util')
 
 // -------------------- app.use --------------------
-// app.use(express.static('public'));
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/xwww-
 //app.use(session(
 //    {"secret": '343ji43j4n3jn4jk3n'})
 //);
-app.use(flash())
+app.use(flash());
 app.set('view engine', 'ejs');
 app.use(session({
     secret: 'keyboard cat',
@@ -27,18 +26,64 @@ app.use(flash());
 
 
 // -------------------- Socket.io --------------------
-// var socketEvents = require('./socketEvents');
-// const io = require('socket.io').listen(server);
-// socketEvents(io);
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
 var clients = {}; // { email -> {"socket": 12345} }
 var clientsOnCall = new Set();
 
 io.sockets.on('connection', function (socket) {
+
+    //********************Socket io function general use***************
+    //                                                               **
+    //The socket io function is used to update the client            **
+    // on real-time information without needing to update the page   **
+    //                                                               **
+    //*****************************************************************
     console.log('new user connected');
+
+    //********************Socket io connection function ***************
+    //                                                               **
+    //Updating a list of clients that connected to the system        **
+    //                                                               **
+    //---------------------------------------------------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     console.log("Clients state: " + util.inspect(clients, false, null, true /* enable colors */));
 
+    //***Socket io disconnect function - General use ******************
+    //                                                               **
+    //Updating a list of clients that disconnected to the system     **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //socket.id = The socket ID given by the socket io function      **
+    //clients = List of clients that connected to the system (see    **
+    //          line 31 For further information)                     **
+    //                                                               **
+    //----------------------Internal functions ----------------------**
+    //                                                               **
+    //getUserEmailBySocketId = get the user email according to his id**
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use io.emit socket io function.                  **
+    //This function emit an event to all connected sockets           **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/                                       **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('disconnect', function () {
         console.log('Socket io function: disconnect');
         console.log('deleting user, with socket id: ' + socket.id);
@@ -55,6 +100,30 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
+    //***Socket io add-user function - General use ********************
+    //                                                               **
+    //Updating a list of clients that connected to the system        **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //clients = List of clients that connected to the system (see    **
+    //          line 31 For further information)                     **
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use io.emit socket io function.                  **
+    //This function emit an event to all connected sockets           **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/                                       **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('add-user', function (data) {
         console.log('Socket io function: add-user');
         console.log("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
@@ -70,17 +139,41 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
-    // socket.on('left-user', function (data) {
-    //     console.log("deleting user, details:  " + util.inspect(data, false, null, true /* enable colors */));
-    //
-    //     console.log('clients before: ' + clients);
-    //     delete clients[data.email];
-    //     console.log('clients after: ' + clients);
-    //     io.emit('contactListChanged', {
-    //         allClients: clients
-    //     });
-    // });
-
+    //***Socket io startVideoChat function - General use **************
+    //                                                               **
+    //Sending a request to start a conversation                      **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //data.targetEmail = the email of getting a call                 **
+    //data.userEmail = the email of Asking for a call                **
+    //targetUserSocket = the socket id of getting a call             **
+    //data.peerId = the peer id of Asking for a call                 **
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use socket.broadcast.to socket io function.      **
+    //This function emit an event to individual socket id            **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/emit-cheatsheet/                       **
+    //                                                               **
+    //-----------------------node js function -----------------------**
+    //                                                               **
+    //The hasOwnProperty() method returns a boolean indicating       **
+    // whether the object has the specified property as its          **
+    // own property                                                  **
+    //see this web site for further information:                     **
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/       **
+    // Reference/Global_Objects/Object/hasOwnProperty                **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('startVideoChat', function (data) {
         console.log('Socket io function: startVideoChat');
         console.log('new request to start video: ' + data);
@@ -105,6 +198,39 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
+    //***Socket io answareVideoChat function - General use ************
+    //                                                               **
+    //Sending a answer to start a conversation                       **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //data.originalEmail = the email of Asking for a call            **
+    //data.answaredId = the peer id of getting for a call            **
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use socket.broadcast.to socket io function.      **
+    //This function emit an event to individual socket id            **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/emit-cheatsheet/                       **
+    //                                                               **
+    //-----------------------node js function -----------------------**
+    //                                                               **
+    //The hasOwnProperty() method returns a boolean indicating       **
+    // whether the object has the specified property as its          **
+    // own property                                                  **
+    //see this web site for further information:                     **
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/       **
+    // Reference/Global_Objects/Object/hasOwnProperty                **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('answareVideoChat', function (data) {
         console.log('Socket io function: answareVideoChat');
         console.log('answare to start video: ' + data);
@@ -125,6 +251,38 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
+    //***Socket io answareVideoChat function - General use ************
+    //                                                               **
+    //updating a list with active calls                              **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //clientsOnCall = list with client email how is in call          **
+    //data.originalUser = the email of Asking for a call             **
+    //data.targetUser = the socket id of getting a call              **
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use io.emit socket io function.                  **
+    //This function emit an event to all connected sockets           **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/                                       **
+    //                                                               **
+    //-----------------------node js function -----------------------**
+    //                                                               **
+    //The Array.from() method returns an Array object from any object**
+    // with a length property                                        **
+    //see this web site for further information:                     **
+    //https://www.w3schools.com/jsref/jsref_from.asp                 **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('videoChatCreated', function (data) {
         console.log('Socket io function: videoChatCreated');
         clientsOnCall.add(data.originalUser);
@@ -134,6 +292,37 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
+    //***Socket io endCall function - General use *********************
+    //                                                               **
+    //updating a list with active calls                              **
+    //                                                               **
+    //----------------------Variables Setting -----------------------**
+    //                                                               **
+    //clientsOnCall = list with client email how is in call          **
+    //data.originalUser = the email of Asking for a call             **
+    //                                                               **
+    //-----------------------Socket io function ---------------------**
+    //                                                               **
+    //This function use io.emit socket io function.                  **
+    //This function emit an event to all connected sockets           **
+    //see this web site for further information:                     **
+    // https://socket.io/docs/                                       **
+    //                                                               **
+    //-----------------------node js function -----------------------**
+    //                                                               **
+    //The Array.from() method returns an Array object from any object**
+    // with a length property                                        **
+    //see this web site for further information:                     **
+    //https://www.w3schools.com/jsref/jsref_from.asp                 **
+    //                                                               **
+    //-----------------------debugging function ---------------------**
+    //                                                               **
+    //This function use util.inspect tool for debugging purposes only**
+    //util.inspect returns a string representation of an object      **
+    //see this web site for further information:                     **
+    //https://nodejs.org/api/util.html                               **
+    //                                                               **
+    //*****************************************************************
     socket.on('endCall', function (data) {
         console.log('Socket io function: endCall');
         clientsOnCall.delete(data.originalUser);
@@ -143,21 +332,46 @@ io.sockets.on('connection', function (socket) {
         console.log('--------------------------------');
     });
 
-    // socket.on('chat message', function (msg) {
-    //     console.log('message: ' + msg);
-    //     io.emit('chat message', msg);
-    // });
 });
 
 
 // -------------------- Routes --------------------
-// This responds with "Hello World" on the homepage
+
+//********************app.get() function general use***************
+//                                                               **
+// refers to how an application’s endpoints (URIs) respond to    **
+// client requests.                                              **
+//                                                               **
+//*****************************************************************
+
+//****************Express app.get('/',...) function ***************
+//                                                               **
+//send the video html page(main page)                            **
+//                                                               **
+//---------------------------Route methods-----------------------**
+//                                                               **
+//This function use app.get method for listen to / in the url    **
+//This function return data the the client using res.render      **
+//method using view template.                                    **
+//see this web site for further information:                     **
+//https://expressjs.com/en/guide/routing.html                    **
+//                                                               **
+//----------------------Variables Setting -----------------------**
+//                                                               **
+//req.session.email = the email of the client                    **
+//                                                               **
+//---------------------------session methods---------------------**
+//                                                               **
+//This function use session method for saving client data        **
+//see this web site for further information:                     **
+//https://www.npmjs.com/package/express-session                  **
+//                                                               **
+//*****************************************************************
 app.get('/', function (req, res) {
     app.use(express.static(__dirname + '/' + 'public'));
     console.log("");
     console.log("-------------------- Got a GET request for the homepage -------------------");
-    console.log("the ssn");
-    console.log("ssn is " + req.session.email);
+    console.log("The session email is " + req.session.email);
     let msg = "test";
     res.render("profile", {person: req.session.email, message: msg});
 });
@@ -199,7 +413,8 @@ app.post('/loginForm', async function (req, res) {
         req.session.email = userName;
         res.redirect('/');
     } else {
-        res.sendStatus(404);
+        let msg = "Username or password incorrect";
+        res.render("login", {message: msg});
     }
 });
 

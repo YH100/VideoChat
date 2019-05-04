@@ -20,7 +20,9 @@ window.initiateVideoChat = function () {
         });
 
         document.getElementById('connect').onclick = function () {
-            var otherId = JSON.parse(document.getElementById('otherId').value);
+            var otherIdTxt = document.getElementById('otherId').value;
+            console.log('Other id is: ' + otherIdTxt.substr(0, 20));
+            var otherId = JSON.parse(otherIdTxt);
             peer.signal(otherId);
         };
 
@@ -44,12 +46,43 @@ window.initiateVideoChat = function () {
         });
 
         peer.on('stream', function (stream) {
+            $('#callWithLbl')[0].innerHTML = 'In a call with: ' + window.targetUser;
+            $('#closeMyVideoBtn')[0].style.visibility = 'visible';
+            $('#loading')[0].style.visibility = 'hidden';
             // var video = document.createElement('video')
             // document.body.appendChild(video)
             var video = document.getElementById('videoMain')
             // video.src = window.URL.createObjectURL(stream)
             video.srcObject = stream;
             video.play();
+
+
+            // Create also my video
+            var myVideo = document.getElementById('myVideo');
+            myVideo.setAttribute('playsinline', '');
+            myVideo.setAttribute('autoplay', '');
+            myVideo.setAttribute('muted', '');
+            myVideo.style.width = '200px';
+            myVideo.style.height = '200px';
+
+            /* Setting up the constraint */
+            var facingMode = "user"; // Can be 'user' or 'environment' to access back or front camera (NEAT!)
+            var constraints = {
+                audio: false,
+                video: {
+                    facingMode: facingMode
+                }
+            };
+
+            /* Stream it to video element */
+            navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+                console.log('Start show my camera');
+                myVideo.srcObject = stream;
+            });
+
+
+
+
 
             var endCallButton = document.getElementById('endCall')
             endCallButton.style.visibility = 'visible';
