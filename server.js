@@ -8,7 +8,18 @@ var sqlite3Sync = getSyncSqlite3();
 const sqlite3 = require('sqlite3').verbose();
 var flash = require('connect-flash-plus');
 var redis = require("redis");
-const util = require('util')
+const util = require('util');
+const simpleNodeLogger = require('simple-node-logger');
+
+
+// -------------------- Logging --------------------
+// create a custom timestamp format for log statements
+const opts = {
+    logFilePath: 'mylogfile.log',
+    timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
+};
+var log = simpleNodeLogger.createSimpleLogger(opts);
+
 
 // -------------------- app.use --------------------
 app.use(bodyParser.json()); // for parsing application/json
@@ -39,7 +50,7 @@ io.sockets.on('connection', function (socket) {
     // on real-time information without needing to update the page   **
     //                                                               **
     //*****************************************************************
-    console.log('new user connected');
+    log.info('new user connected with socket id: ' + socket.id);
 
     //********************Socket io connection function ***************
     //                                                               **
@@ -53,7 +64,7 @@ io.sockets.on('connection', function (socket) {
     //https://nodejs.org/api/util.html                               **
     //                                                               **
     //*****************************************************************
-    console.log("Clients state: " + util.inspect(clients, false, null, true /* enable colors */));
+    log.info("Clients state: " + util.inspect(clients, false, null, true /* enable colors */));
 
     //***Socket io disconnect function - General use ******************
     //                                                               **
@@ -85,19 +96,19 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('disconnect', function () {
-        console.log('Socket io function: disconnect');
-        console.log('deleting user, with socket id: ' + socket.id);
+        log.info('----- Socket io function: disconnect called -----');
+        log.info('deleting user, with socket id: ' + socket.id);
 
-        console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
+        log.info('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
         var userEmail = getUserEmailBySocketId(clients, socket.id);
-        console.log('the user email is: ' + userEmail);
+        log.info('the user email is: ' + userEmail);
         delete clients[userEmail];
-        console.log('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
+        log.info('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
 
         io.emit('contactListChanged', {
             allClients: clients
         });
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
     //***Socket io add-user function - General use ********************
@@ -125,18 +136,18 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('add-user', function (data) {
-        console.log('Socket io function: add-user');
-        console.log("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
+        log.info('-----Socket io function: add-user called -----');
+        log.info("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
 
-        console.log('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
+        log.info('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
         clients[data.email] = {
             "socket": socket.id
         };
-        console.log('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
+        log.info('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
         io.emit('contactListChanged', {
             allClients: clients
         });
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
     //***Socket io startVideoChat function - General use **************
@@ -175,27 +186,27 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('startVideoChat', function (data) {
-        console.log('Socket io function: startVideoChat');
-        console.log('new request to start video: ' + data);
-        console.log('data value: targetEmail: ' + data.targetEmail + ", userEmail: " + data.userEmail);
-        console.log('--------------------------------');
-        console.log('peerId: ' + data.peerId.substring(0, 20));
-        console.log('--------------------------------');
+        log.info('----- Socket io function: startVideoChat called -----');
+        log.info('new request to start video: ' + data);
+        log.info('data value: targetEmail: ' + data.targetEmail + ", userEmail: " + data.userEmail);
+        log.info('--------------------------------');
+        log.info('peerId: ' + data.peerId.substring(0, 20));
+        log.info('--------------------------------');
 
         // sending to individual socketid
 
 
         if (!clients.hasOwnProperty(data.targetEmail))
-            console.log(`user ${data.userEmail} tried to call: ${data.targetEmail}, but he is not exist in the server! clients: ${util.inspect(clients, false, null, true)}`);
+            log.info(`user ${data.userEmail} tried to call: ${data.targetEmail}, but he is not exist in the server! clients: ${util.inspect(clients, false, null, true)}`);
         else {
             var targetUserSocket = clients[data.targetEmail].socket;
-            console.log('targetUserSocket is: ' + targetUserSocket + ' of mail: ' + data.targetEmail);
+            log.info('targetUserSocket is: ' + targetUserSocket + ' of mail: ' + data.targetEmail);
             socket.broadcast.to(targetUserSocket).emit('askForVideoChat', {
                 requesterCode: data.peerId,
                 requesterEmail: data.userEmail
             });
         }
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
     //***Socket io answareVideoChat function - General use ************
@@ -232,23 +243,23 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('answareVideoChat', function (data) {
-        console.log('Socket io function: answareVideoChat');
-        console.log('answare to start video: ' + data);
-        console.log('data value: originalEmail: ' + data.originalEmail);
-        console.log('answaredId: ' + data.answaredId.substring(0, 20));
+        log.info('----- Socket io function: answareVideoChat called -----');
+        log.info('answare to start video: ' + data);
+        log.info('data value: originalEmail: ' + data.originalEmail);
+        log.info('answaredId: ' + data.answaredId.substring(0, 20));
 
         // sending to individual socketid
 
         if (!clients.hasOwnProperty(data.originalEmail))
-            console.log(`user ${data.originalEmail} in the server! clients: ${util.inspect(clients, false, null, true)}`);
+            log.info(`user ${data.originalEmail} in the server! clients: ${util.inspect(clients, false, null, true)}`);
         else {
             var originalUserSocket = clients[data.originalEmail].socket;
-            console.log('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
+            log.info('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
             socket.broadcast.to(originalUserSocket).emit('ansForVideoChat', {
                 peerId: data.answaredId
             });
         }
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
     //***Socket io answareVideoChat function - General use ************
@@ -284,12 +295,12 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('videoChatCreated', function (data) {
-        console.log('Socket io function: videoChatCreated');
+        log.info('----- Socket io function: videoChatCreated called -----');
         clientsOnCall.add(data.originalUser);
         clientsOnCall.add(data.targetUser);
-        console.log('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
+        log.info('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
         io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
     //***Socket io endCall function - General use *********************
@@ -324,12 +335,12 @@ io.sockets.on('connection', function (socket) {
     //                                                               **
     //*****************************************************************
     socket.on('endCall', function (data) {
-        console.log('Socket io function: endCall');
+        log.info('----- Socket io function: endCall called -----');
         clientsOnCall.delete(data.originalUser);
         // clientsOnCall.delete(OTHER);
-        console.log('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
+        log.info('clients currently on call: ' + util.inspect(clientsOnCall, false, null, true));
         io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
-        console.log('--------------------------------');
+        log.info('--------------------------------');
     });
 
 });
@@ -368,35 +379,42 @@ io.sockets.on('connection', function (socket) {
 //                                                               **
 //*****************************************************************
 app.get('/', function (req, res) {
+    log.info("-------------------- Got a GET request for the homepage -------------------");
+    if (req.session.email)
+        log.info('email of the user is: ' + req.session.email);
+
+    if (req.session.email == null) {
+        res.redirect('login');
+    }
     app.use(express.static(__dirname + '/' + 'public'));
-    console.log("");
-    console.log("-------------------- Got a GET request for the homepage -------------------");
-    console.log("The session email is " + req.session.email);
+    log.info("The session email is " + req.session.email);
     let msg = "test";
     res.render("profile", {person: req.session.email, message: msg});
 });
 
 app.get('/example', (req, res) => {
+    log.info("-------------------- Got a GET request for example -------------------");
     io.emit('message', 'Hello world');
     res.sendStatus(200);
 });
 
 app.get('/login', function (req, res) {
-    console.log("-------------------- Got a GET request for login  -------------------");
+    log.info("-------------------- Got a GET request for login  -------------------");
     app.use(express.static(__dirname + '/' + 'public'));
     res.sendFile(__dirname + "/public/html/login.html");
 });
 
 app.post('/loginForm', async function (req, res) {
-    console.log('loginForm: ' + req.body);
+    log.info("-------------------- Got a Post request for login form -------------------");
+    log.info('loginForm: ' + req.body);
     var userName = req.body.userName;
     var password = req.body.password;
-    console.log(`got userName: ${userName}, password: ${password}`);
+    log.info(`got userName: ${userName}, password: ${password}`);
 
     try {
         await sqlite3Sync.open('try.db');
         let sql = "SELECT * FROM reg_user WHERE email = '" + userName + "' AND password = '" + password + "'";
-        console.log("sql query is: " + sql);
+        log.info("sql query is: " + sql);
         r = await sqlite3Sync.get(sql);
         var isExist = r !== undefined;
         sqlite3Sync.close();
@@ -407,10 +425,11 @@ app.post('/loginForm', async function (req, res) {
     }
 
     // var isExist = isUserInDb(userName, password);
-    console.log('isExist: ' + isExist);
+    log.info('isExist: ' + isExist);
     if (isExist) {
-        console.log("user Exist!!!");
+        log.info("user Exist!!!");
         req.session.email = userName;
+        req.session.cookie.expires = false;
         res.redirect('/');
     } else {
         let msg = "Username or password incorrect";
@@ -419,16 +438,16 @@ app.post('/loginForm', async function (req, res) {
 });
 
 app.post('/SignUpForm', async function (req, res) {
-
-    console.log('signUpForm: ' + req.body.re_pass);
-    console.log('signUpForm: ' + req.body.name);
-    console.log('signUpForm: ' + req.body.email);
-    console.log('signUpForm: ' + req.body.pass);
+    log.info("-------------------- Got a Post request for SignUpForm -------------------");
+    log.info('signUpForm: ' + req.body.re_pass);
+    log.info('signUpForm: ' + req.body.name);
+    log.info('signUpForm: ' + req.body.email);
+    log.info('signUpForm: ' + req.body.pass);
 
     try {
         await sqlite3Sync.open('try.db');
         let sql = `INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`;
-        console.log("sql query is: " + sql);
+        log.info("sql query is: " + sql);
         let name = req.body.name;
         let password = req.body.re_pass;
         let email = req.body.email;
@@ -441,7 +460,7 @@ app.post('/SignUpForm', async function (req, res) {
     }
 
     // var i = addUserInDb(req.body.name, req.body.re_pass, req.body.email);
-    console.log("isAdded: " + isAdded);
+    log.info("isAdded: " + isAdded);
     if (isAdded) {
         res.redirect("/")
     } else {
@@ -454,27 +473,27 @@ app.get('/index.js', browserify('./public/index.js'));
 
 
 // -------------------- Start Server --------------------
-console.log('Site Directory Name: ' + __dirname)
+log.info('Site Directory Name: ' + __dirname)
 var server = http.listen(8081, function () {
     var host = server.address().address;
     var port = server.address().port;
-    console.log("Video Chat App listening at http://%s:%s", host, port);
+    log.info("Video Chat App listening at http://%s:%s", host, port);
 });
 
 
 // -------------------- Data Base --------------------
 async function isUserInDb(email, password) {
-    console.log("Execting isUserInDb")
+    log.info("Execting isUserInDb")
     let db = new sqlite3.Database('try.db', (err) => {
         if (err) {
             console.error(err.message);
             return false;
         }
-        console.log('Connected to the in-memory SQlite database.');
+        log.info('Connected to the in-memory SQlite database.');
     });
 
     let sql = "SELECT * FROM reg_user WHERE email = '" + email + "' AND password = '" + password + "'";
-    console.log("sql query is: " + sql);
+    log.info("sql query is: " + sql);
 
     // var isUserExist = false;
     // db.get(sql, [], (err, row) => {
@@ -482,7 +501,7 @@ async function isUserInDb(email, password) {
     //         throw err;
     //     }
     //     var res = row !== undefined;
-    //     console.log('res = ' + res);
+    //     log.info('res = ' + res);
     //     isUserExist = res;
     // });
 
@@ -500,13 +519,13 @@ async function isUserInDb(email, password) {
                 if (err) {
                     console.error(err.message);
                 }
-                console.log('Close the database connection.');
+                log.info('Close the database connection.');
             });
         });
     }
 
     // myPromise.then(function(value) {
-    //     console.log('result from promise is: ' + value);
+    //     log.info('result from promise is: ' + value);
     // });
 
     // db.serialize(() => {
@@ -514,7 +533,7 @@ async function isUserInDb(email, password) {
     //         if (err) {
     //             console.error(err.message);
     //         }
-    //         console.log(row.name + "\t" + row.password);
+    //         log.info(row.name + "\t" + row.password);
     //         return true;
     //     });
     //     return false;
@@ -522,7 +541,7 @@ async function isUserInDb(email, password) {
 
 
     var result = checkIfUserExist();
-    console.log("return from await: " + result);
+    log.info("return from await: " + result);
     return result;
 }
 
@@ -534,11 +553,11 @@ async function addUserInDb(name, password, email) {
                 if (err) {
                     console.error(err.message);
                 }
-                console.log('Close the database connection.');
+                log.info('Close the database connection.');
             });
             return false;
         }
-        console.log('Connected to the in-memory SQlite database.');
+        log.info('Connected to the in-memory SQlite database.');
     });
 
 
@@ -546,16 +565,16 @@ async function addUserInDb(name, password, email) {
         return new Promise(function (resolve, reject) {
             db.run(`INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`, [name, password, email], function (err) {
                 if (err) {
-                    console.log("err insert: " + err.message);
+                    log.info("err insert: " + err.message);
                     reject(err);
                 } else {
                     // get the last insert id
-                    console.log(`A row has been inserted with rowid: ${this.lastID}`);
+                    log.info(`A row has been inserted with rowid: ${this.lastID}`);
                     db.close((err) => {
                         if (err) {
                             console.error(err.message);
                         }
-                        console.log('Close the database connection.');
+                        log.info('Close the database connection.');
                         return true;
                     });
                     resolve();
@@ -566,11 +585,11 @@ async function addUserInDb(name, password, email) {
 
     var isUserInserted = true;
     var res = await insertAsync().catch((err) => {
-        console.log(err);
+        log.info(err);
         isUserInserted = false;
     });
-    console.log('res = ' + res);
-    console.log('return from async function addUserInDb is: ' + isUserInserted);
+    log.info('res = ' + res);
+    log.info('return from async function addUserInDb is: ' + isUserInserted);
     return isUserInserted;
 }
 
@@ -657,9 +676,9 @@ function getSyncSqlite3() {
 }
 
 function getUserEmailBySocketId(allClients, socketId) {
-    console.log('start');
+    log.info('start');
     for (var key in allClients) {
-        console.log(key);
+        log.info(key);
         if (allClients.hasOwnProperty(key)) {
             if (allClients[key].socket === socketId)
                 return key;

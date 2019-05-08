@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <meta charset="utf-8">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" charset="utf-8"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -16,9 +17,25 @@
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/profile_style.css">
+
+
+    <script>
+        function myFunction() {
+            document.getElementById("btnSend").disabled = true;
+        }
+
+        function validate_in() {
+            var msg = window.messagefield.username.value;
+            if (msg.length(msg) == 0) {
+                document.getElementById("btnSend").disabled = true;
+                return;
+            }
+            document.getElementById("btnSend").disabled = false;
+        }
+    </script>
 </head>
 <body>
-<div align="center" id="body">
+<p style="font-size:100px">&#128540;</p><div align="center" id="body">
     <br/><br/>
     <!-- ----------------------------------------------------------------------------------------------------------  -->
     <div id="callHasEndedMessage" class="alert alert-success" role="alert" style="display: none;">
@@ -29,7 +46,7 @@
 
     <div id="callWindow" style="display: none;">
         <div class="alert alert-success" role="alert">
-            <div style="text-align: center;">
+            <div class="c" style="text-align: center;">
                 Incoming call from <strong><label id="callerName"></label></strong>
                 <br/><br/>
                 <button type="button" class="btn btn-success" id="answer">Answer</button>
@@ -55,7 +72,10 @@
                             <h5>Hello: <b><%= person %></b><br/>My Contacts</h5>
                             <input type="button" value="+" id="addNewContact"/>
                             <input type="test" placeholder="search" value="" id="search"/>
-                            <div id="contactList">
+                            <br/>
+                            <div id="myContact" align="left"></div>
+                            <hr style="border-color: black"/>
+                            <div id="contactList" align="left">
                                 <!--
                                 <button class="chip">
                                     <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
@@ -70,6 +90,7 @@
                             <input type="checkbox" checked data-toggle="toggle" id="closeMyVideoBtn"
                                    style="visibility: hidden">
                             <video id="myVideo"></video>
+                            <button onclick="openFullscreen();">Open Video in Fullscreen Mode</button>
                         </td>
                     </tr>
                 </table>
@@ -89,8 +110,16 @@
                             <center>
                                 <video id="videoMain"></video>
                                 <br/>
-                                <button type="button" class="btn btn-danger" id="endCall" style="visibility: hidden;">End Call</button>
-                                <br />
+                                <button type="button" class="btn btn-danger" id="endCall" style="visibility: hidden;">
+                                    End Call
+                                </button>
+                                <div id="callButtons" style="visibility: hidden">
+                                    <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
+                                           data-off="Disabled" id="mute"/> Mute
+                                    <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
+                                           data-off="Disabled" id="sendVideo"/> Send Video
+                                </div>
+                                <br/>
                                 <div id="loading" class="loader" style="visibility: hidden;">Calling:</div>
                             </center>
                         </td>
@@ -224,7 +253,7 @@
                         originalEmail: requesterEmail,
                         answaredId: myId
                     });
-                }, 7000);
+                }, 10000);
             }
         });
 
@@ -257,29 +286,47 @@
         $('#callWithLbl')[0].innerHTML = '';
         $('#endCall')[0].style.visibility = 'hidden';
         $('#closeMyVideoBtn')[0].style.visibility = 'hidden';
+        $('#callButtons')[0].style.visibility = 'hidden';
         $('#videoMain')[0].srcObject = null;
         $('#myVideo')[0].srcObject = null;
         window.initiateVideoChat();
         window.socket.emit('endCall', {originalUser: window.originalUser});
     }
 
+    function sendSpecialCommand(specialCommand) {
+        $('#textfield')[0].value = specialCommand;
+        $('#btnSend').click();
+    }
+
     window.onload = function () {
         console.log("Chat page has been loaded");
 
         $('#endCall').click(function () {
-            var r = confirm('are you sure you want to end this call?')
+            // var r = confirm('are you sure you want to end this call?')
+            var r = true;
             if (r == true) {
                 endCallFunc();
-                $('#textfield')[0].value = 'END_CALL';
-                $('#btnSend').click();
+                sendSpecialCommand('END_CALL');
             }
         });
 
-        document.getElementById('closeMyVideoBtn').onchange = function (event) {
+        document.getElementById('sendVideo').onchange = function (event) {
             if (event.target.checked) {
-                $('#myVideo')[0].style.visibility = 'visible';
+                document.getElementById('myVideo').srcObject.getVideoTracks()[0].enabled = true;
+                sendSpecialCommand('VIDEO_ON');
             } else {
-                $('#myVideo')[0].style.visibility = 'hidden';
+                document.getElementById('myVideo').srcObject.getVideoTracks()[0].enabled = false;
+                sendSpecialCommand('VIDEO_OFF');
+            }
+        };
+
+        document.getElementById('mute').onchange = function (event) {
+            if (event.target.checked) {
+                document.getElementById('myVideo').srcObject.getAudioTracks()[0].enabled = true;
+                sendSpecialCommand('AUDIO_ON');
+            } else {
+                document.getElementById('myVideo').srcObject.getAudioTracks()[0].enabled = false;
+                sendSpecialCommand('AUDIO_OFF');
             }
         };
 
@@ -301,94 +348,110 @@
     };
 
     function createContactList(users) {
+        var myContactDiv = document.getElementById("myContact");
         var contactListDiv = document.getElementById("contactList");
         if (contactListDiv == null)
             return;
         contactListDiv.innerHTML = '';
+        myContactDiv.innerHTML = '';
 
         for (let email in users) {
-            var button = document.createElement("button");
-            button.className = "chip";
-            button.onclick = function () {
-                if (clientsOnCall && clientsOnCall.length != 0 && clientsOnCall.indexOf(window.originalUser) != -1) {
-                    alert('You can not call while you are already in a call');
-                    return;
-                }
-
-                var currentUserEmail = email;
-                if (clientsOnCall && clientsOnCall.indexOf(currentUserEmail) != -1) {
-                    var message = `User: ${currentUserEmail} is already in a call and cant accept your request`;
-                    $('#userInCallLbl')[0].innerHTML = message;
-                    document.getElementById('userInCallAlertBox').style.display = "block";
-                    return;
-                }
-                $('#loading')[0].style.visibility = 'visible';
-                window.location.href = "http://" + location.hostname + ":8081/#init";
-                window.initiateVideoChat();
-
-                setTimeout(function () {
-                    // document.getElementById("videoChatForm").submit();
-                    // $('form').submit();
-                    $('#targetEmail').val(currentUserEmail)
-                    window.targetUser = currentUserEmail;
-                    $('#startConversation').click();
-                }, 6000);
-            };
+            var button = createContactButton(email);
 
             if (email == userEmail) {
                 button.disabled = true;
             }
 
+            if (email == userEmail) {
+                myContactDiv.appendChild(button);
+            } else {
+                contactListDiv.appendChild(button);
 
-            var textNode = document.createTextNode(email);
-            button.appendChild(textNode);
-
-            var photo = document.createElement("img");
-            photo.src = 'https://www.w3schools.com/howto/img_avatar.png';
-            photo.alt = email;
-            photo.width = 96;
-            photo.height = 96;
-            button.appendChild(photo);
-
-            contactListDiv.appendChild(button);
-
-            var br = document.createElement("br");
-            contactListDiv.appendChild(br);
+                var br = document.createElement("br");
+                contactListDiv.appendChild(br);
+            }
         }
+    }
+
+    function createContactButton(email) {
+        var button = document.createElement("button");
+        button.className = "chip";
+        button.onclick = function () {
+            if (clientsOnCall && clientsOnCall.length != 0 && clientsOnCall.indexOf(window.originalUser) != -1) {
+                alert('You can not call while you are already in a call');
+                return;
+            }
+
+            var currentUserEmail = email;
+            if (clientsOnCall && clientsOnCall.indexOf(currentUserEmail) != -1) {
+                var message = `User: ${currentUserEmail} is already in a call and cant accept your request`;
+                $('#userInCallLbl')[0].innerHTML = message;
+                document.getElementById('userInCallAlertBox').style.display = "block";
+                return;
+            }
+            $('#loading')[0].style.visibility = 'visible';
+            window.location.href = "http://" + location.hostname + ":8081/#init";
+            window.initiateVideoChat();
+
+            setTimeout(function () {
+                // document.getElementById("videoChatForm").submit();
+                // $('form').submit();
+                $('#targetEmail').val(currentUserEmail)
+                window.targetUser = currentUserEmail;
+                $('#startConversation').click();
+            }, 6000);
+        };
+        var textNode = document.createTextNode(email);
+        button.appendChild(textNode);
+        var photo = document.createElement("img");
+        photo.src = 'https://www.w3schools.com/howto/img_avatar.png';
+        photo.alt = email;
+        photo.width = 96;
+        photo.height = 96;
+        button.appendChild(photo);
+        return button;
     }
 
     function addNewMessage(message, isOwner) {
         if (message == 'END_CALL') {
+            window.location.href = "http://" + location.hostname + ":8081/";
             endCallFunc();
             document.getElementById('callHasEndedMessage').style.display = "block"
-            window.setTimeout(function() {
-                $("#callHasEndedMessage").fadeTo(500, 0).slideUp(500, function(){
+            window.setTimeout(function () {
+                $("#callHasEndedMessage").fadeTo(500, 0).slideUp(500, function () {
                     $(this).remove();
                 });
             }, 4000);
-            return;
+        } else if (message == 'VIDEO_ON') {
+            document.getElementById('videoMain').srcObject.getVideoTracks()[0].enabled = true;
+        } else if (message == 'VIDEO_OFF') {
+            document.getElementById('videoMain').srcObject.getVideoTracks()[0].enabled = false;
+        } else if (message == 'AUDIO_ON') {
+            document.getElementById('videoMain').srcObject.getAudioTracks()[0].enabled = true;
+        } else if (message == 'AUDIO_OFF') {
+            document.getElementById('videoMain').srcObject.getAudioTracks()[0].enabled = false;
+        } else {
+            var chatsDiv = document.getElementById("chatlogs");
+            var node = document.createElement("div");
+
+            if (isOwner)
+                node.className = "chat self";
+            else
+                node.className = "chat friend";
+
+            var innerDiv = document.createElement("div");
+            var photo = document.createElement("img");
+            photo.src = 'https://www.w3schools.com/howto/img_avatar.png';
+            innerDiv.appendChild(photo);
+            innerDiv.className = "user-photo";
+            var innerP = document.createElement("p");
+            innerP.className = "chat-message";
+            node.appendChild(innerDiv);
+            node.appendChild(innerP);
+            var textNode = document.createTextNode(message);
+            innerP.appendChild(textNode);
+            chatsDiv.appendChild(node);
         }
-
-        var chatsDiv = document.getElementById("chatlogs");
-        var node = document.createElement("div");
-
-        if (isOwner)
-            node.className = "chat self";
-        else
-            node.className = "chat friend";
-
-        var innerDiv = document.createElement("div");
-        var photo = document.createElement("img");
-        photo.src = 'https://www.w3schools.com/howto/img_avatar.png';
-        innerDiv.appendChild(photo);
-        innerDiv.className = "user-photo";
-        var innerP = document.createElement("p");
-        innerP.className = "chat-message";
-        node.appendChild(innerDiv);
-        node.appendChild(innerP);
-        var textNode = document.createTextNode(message);
-        innerP.appendChild(textNode);
-        chatsDiv.appendChild(node);
     }
 </script>
 

@@ -19,6 +19,8 @@ td {
     border-radius: 25px;
     background-color: #f1f1f1;
     margin: 5px;
+    width: 300px;
+    text-align: left;
 }
 
 .chip img {
@@ -184,4 +186,13 @@ td {
     100% {
         transform: rotate(360deg);
     }
+}
+
+div.c {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+div.alert alert-success{
+    font-size: 20px;
 }

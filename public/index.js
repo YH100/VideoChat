@@ -48,13 +48,15 @@ window.initiateVideoChat = function () {
         peer.on('stream', function (stream) {
             $('#callWithLbl')[0].innerHTML = 'In a call with: ' + window.targetUser;
             $('#closeMyVideoBtn')[0].style.visibility = 'visible';
+            $('#callButtons')[0].style.visibility = 'visible';
             $('#loading')[0].style.visibility = 'hidden';
             // var video = document.createElement('video')
             // document.body.appendChild(video)
-            var video = document.getElementById('videoMain')
+            var video = document.getElementById('videoMain');
             // video.src = window.URL.createObjectURL(stream)
             video.srcObject = stream;
             video.play();
+            var elem = document.getElementById("videoMain");
 
 
             // Create also my video
@@ -81,13 +83,16 @@ window.initiateVideoChat = function () {
             });
 
 
-
-
-
             var endCallButton = document.getElementById('endCall')
             endCallButton.style.visibility = 'visible';
         })
     });
 };
+
+function openFullscreen() {
+    if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        elem.webkitRequestFullscreen();
+    }
+}
 
 window.initiateVideoChat();
