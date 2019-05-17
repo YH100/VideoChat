@@ -1,0 +1,5 @@
+CREATE TABLE Users(
+    NickName TEXT NOT NULL UNIQUE PRIMARY KEY,
+    Email TEXT NOT NULL UNIQUE,
+    Password TEXT
+);

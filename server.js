@@ -262,7 +262,7 @@ io.sockets.on('connection', function (socket) {
         log.info('--------------------------------');
     });
 
-    //***Socket io answareVideoChat function - General use ************
+    //***Socket io videoChatCreated function - General use ************
     //                                                               **
     //updating a list with active calls                              **
     //                                                               **
@@ -413,7 +413,7 @@ app.post('/loginForm', async function (req, res) {
 
     try {
         await sqlite3Sync.open('try.db');
-        let sql = "SELECT * FROM reg_user WHERE email = '" + userName + "' AND password = '" + password + "'";
+        let sql = "SELECT * FROM Users WHERE Email = '" + userName + "' AND Password = '" + password + "'";
         log.info("sql query is: " + sql);
         r = await sqlite3Sync.get(sql);
         var isExist = r !== undefined;
@@ -440,17 +440,38 @@ app.post('/loginForm', async function (req, res) {
 app.post('/SignUpForm', async function (req, res) {
     log.info("-------------------- Got a Post request for SignUpForm -------------------");
     log.info('signUpForm: ' + req.body.re_pass);
-    log.info('signUpForm: ' + req.body.name);
+    log.info('signUpForm: ' + req.body.nickName);
     log.info('signUpForm: ' + req.body.email);
     log.info('signUpForm: ' + req.body.pass);
 
+    var nickName = req.body.nickName;
+    var name = req.body.name;
+    var password = req.body.re_pass;
+    var email = req.body.email;
+
     try {
         await sqlite3Sync.open('try.db');
-        let sql = `INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`;
+
+        let checkIfsql = `select count(case when NickName = '${nickName}' then 1 end) >= 1 as IsNickExist,
+                                 count(case when Email = '${email}' then 1 end) >= 1 as IsEmailExist
+                          from Users`;
+
+        log.info("sql query to check if nick namd and email already exist is: " + checkIfsql);
+        var result = await sqlite3Sync.get(checkIfsql);
+        if (result.IsNickExist == 1) {
+            var msg = `nickName: ${nickName} already exist`;
+            log.info(msg);
+            res.render("login", {message: msg});
+            return;
+        } else if (result.IsEmailExist == 1) {
+            var msg = `email: ${email} already exist`;
+            log.info(msg);
+            res.render("login", {message: msg});
+            return;
+        }
+        let sql = `INSERT INTO Users(NickName, Password, Email) VALUES(?,?,?)`;
         log.info("sql query is: " + sql);
-        let name = req.body.name;
-        let password = req.body.re_pass;
-        let email = req.body.email;
+
         var isAdded = await sqlite3Sync.run(sql, [name, password, email]);
         sqlite3Sync.close();
     } catch (e) {
@@ -492,7 +513,7 @@ async function isUserInDb(email, password) {
         log.info('Connected to the in-memory SQlite database.');
     });
 
-    let sql = "SELECT * FROM reg_user WHERE email = '" + email + "' AND password = '" + password + "'";
+    let sql = "SELECT * FROM Users WHERE Email = '" + email + "' AND Password = '" + password + "'";
     log.info("sql query is: " + sql);
 
     // var isUserExist = false;
@@ -563,7 +584,7 @@ async function addUserInDb(name, password, email) {
 
     function insertAsync() {
         return new Promise(function (resolve, reject) {
-            db.run(`INSERT INTO reg_user(name, password,email) VALUES(?,?,?)`, [name, password, email], function (err) {
+            db.run(`INSERT INTO Users(NickName, Password, Email) VALUES(?,?,?)`, [name, password, email], function (err) {
                 if (err) {
                     log.info("err insert: " + err.message);
                     reject(err);
@@ -594,7 +615,7 @@ async function addUserInDb(name, password, email) {
 }
 
 function getSyncSqlite3() {
-    const sqlite3 = require('sqlite3').verbose()
+    const sqlite3 = require('sqlite3').verbose();
     var db = {};
     db.open = function (path) {
         return new Promise(function (resolve) {
@@ -617,7 +638,6 @@ function getSyncSqlite3() {
                 })
         })
     };
-
 
 // first row read
     db.get = function (query, params) {

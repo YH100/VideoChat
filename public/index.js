@@ -29,6 +29,11 @@ window.initiateVideoChat = function () {
         document.getElementById('btnSend').onclick = function () {
             var textField = document.getElementById('textfield');
             var message = textField.value;
+            if (message.length == 0)
+            {
+                alert("you cant send empty message");
+                return;
+            }
             textField.value = '';
             addNewMessage(message, true);
             peer.send(message);

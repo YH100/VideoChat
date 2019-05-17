@@ -11,6 +11,45 @@
 
     <!-- Main css -->
     <link rel="stylesheet" href="css/style.css">
+
+    <script language="JavaScript">
+        window.onload = function () {
+            console.log("Chat page has been loaded");
+
+            $('#endCall').click(function () {
+                // var r = confirm('are you sure you want to end this call?')
+                var r = true;
+                if (r == true) {
+                    endCallFunc();
+                    sendSpecialCommand('END_CALL');
+                }
+            });
+        };
+
+        function validateRegisterForm() {
+            var nickName = document.registerForm.nickName.value;
+            var email = document.registerForm.email.value;
+            var password = document.registerForm.pass.value;
+            var passwordRepeat = document.registerForm.re_pass.value;
+            if ((nickName.length < 3) || (nickName.length > 6)) {
+                alert('Nick Name must be between 3 to 6 characters');
+                return false;
+            }
+            if (email.length == 0) {
+                alert('You must enter email');
+                return false;
+            }
+            if (password.length < 6) {
+                alert('Password length must be at least 6 characters');
+                return false;
+            }
+            if (password != passwordRepeat) {
+                alert('Passwords are not the same');
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
     <div class="main">
@@ -28,11 +67,11 @@
                         <h2 class="form-title">Log in</h2>
                         <form method="POST" class="register-form" id="login-form" action="/loginForm">
                             <div class="form-group">
-                                <label for="your_name"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                                <label for="userName"><i class="zmdi zmdi-account material-icons-name"></i></label>
                                 <input type="text" name="userName" id="userName" placeholder="Your Name" >
                             </div>
                             <div class="form-group">
-                                <label for="your_pass"><i class="zmdi zmdi-lock"></i></label>
+                                <label for="password"><i class="zmdi zmdi-lock"></i></label>
                                 <input type="password" name="password" id="password" placeholder="Password"/>
                             </div>
                             <div class="form-group">
@@ -53,17 +92,17 @@
     <br>
     <br>
     <br>
-    <br>
+    <br>7
         <!-- Sign up form -->
         <section class="signup">
             <div class="container">
                 <div class="signup-content">
                     <div class="signup-form">
                         <h2 class="form-title">Sign up</h2>
-                        <form method="POST" class="register-form" id="register-form" action="/SignUpForm">
+                        <form method="POST" class="register-form" id="register-form" action="/SignUpForm" onsubmit="return validateRegisterForm()" name="registerForm">
                             <div class="form-group">
                                 <label for="name"><i class="zmdi zmdi-account material-icons-name"></i></label>
-                                <input type="text" name="name" id="name" placeholder="Your Name"/>
+                                <input type="text" name="nickName" id="name" placeholder="Your Nick Name"/>
                             </div>
                             <div class="form-group">
                                 <label for="email"><i class="zmdi zmdi-email"></i></label>
@@ -71,11 +110,11 @@
                             </div>
                             <div class="form-group">
                                 <label for="pass"><i class="zmdi zmdi-lock"></i></label>
-                                <input type="password" name="pass" id="pass" placeholder="Password"/>
+                                <input type="password" name="pass" id="pass" placeholder="Your Password"/>
                             </div>
                             <div class="form-group">
-                                <label for="re-pass"><i class="zmdi zmdi-lock-outline"></i></label>
-                                <input type="password" name="re_pass" id="re_pass" placeholder="Repeat your password"/>
+                                <label for="re_pass"><i class="zmdi zmdi-lock-outline"></i></label>
+                                <input type="password" name="re_pass" id="re_pass" placeholder="Repeat Your Password"/>
                             </div>
                             <div class="form-group form-button">
                                 <input type="submit" name="signup" id="signup" class="form-submit" value="Register"/>
@@ -90,9 +129,6 @@
                 </div>
             </div>
         </section>
-       
-
-        
 
     <!-- JS -->
     <script src="vendor/jquery/jquery.min.js"></script>

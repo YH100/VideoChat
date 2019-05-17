@@ -35,7 +35,7 @@
     </script>
 </head>
 <body>
-<p style="font-size:100px">&#128540;</p><div align="center" id="body">
+<div align="center" id="body">
     <br/><br/>
     <!-- ----------------------------------------------------------------------------------------------------------  -->
     <div id="callHasEndedMessage" class="alert alert-success" role="alert" style="display: none;">
@@ -138,7 +138,7 @@
                     <!-- <form action="http://localhost:5000/message" class="form" method="post"> -->
                     <form action="" class="form" method="post" onSubmit="return false">
                         <div class="chat-form">
-                            <input id="textfield" placeholder="Write your message here" name="messagefield" type="text">
+                            <input id="textfield" placeholder="Write your message here" name="messagefield" type="text" onkeyup="stoppedTyping()">
                             <button id="btnSend">Send</button>
                             <input type="hidden" value="foo" name="user_id"/>
                         </div>
@@ -253,7 +253,7 @@
                         originalEmail: requesterEmail,
                         answaredId: myId
                     });
-                }, 10000);
+                }, 40000);
             }
         });
 
@@ -399,7 +399,7 @@
                 $('#targetEmail').val(currentUserEmail)
                 window.targetUser = currentUserEmail;
                 $('#startConversation').click();
-            }, 6000);
+            }, 40000);
         };
         var textNode = document.createTextNode(email);
         button.appendChild(textNode);
@@ -451,6 +451,14 @@
             var textNode = document.createTextNode(message);
             innerP.appendChild(textNode);
             chatsDiv.appendChild(node);
+        }
+    }
+
+    function stoppedTyping(){
+        if(document.getElementById("textfield").value.length > 0) {
+            document.getElementById("btnSend").disabled = false;
+        } else {
+            document.getElementById("btnSend").disabled = true;
         }
     }
 </script>
