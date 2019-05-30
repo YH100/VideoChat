@@ -11,6 +11,13 @@
 
     <!-- Main css -->
     <link rel="stylesheet" href="css/style.css">
+
+    <script !src="">
+        function passwordRecovery() {
+            myWindow = window.open("http://127.0.0.1:8081/passwordRecoveryForm", "Password Recovery", "width=700, height=550, statusbar=0, menubar=0, toolbar=0");
+            myWindow.focus();
+        }
+    </script>
 </head>
 <body>
 <center><h1 style="color:red;"><%= message %></h1></center>
@@ -23,7 +30,8 @@
             <div class="signin-content">
                 <div class="signin-image">
                     <figure><img src="images/signin-image.jpg" alt="sing up image"></figure>
-                    <a  href="#signinf" class="signup-image-link">Create an account</a>
+                    <a href="#signinf" class="signup-image-link">Create an account</a>
+                    <a href="#" class="signup-image-link" onclick="passwordRecovery();">Forget your password?</a>
                 </div>
 
                 <div class="signin-form">
@@ -31,15 +39,16 @@
                     <form method="POST" class="register-form" id="login-form" action="/loginForm">
                         <div class="form-group">
                             <label for="your_name"><i class="zmdi zmdi-account material-icons-name"></i></label>
-                            <input type="text" name="userName" id="userName" placeholder="Your Name" >
+                            <input type="text" name="userName" id="userName" placeholder="Your Name">
                         </div>
                         <div class="form-group">
                             <label for="your_pass"><i class="zmdi zmdi-lock"></i></label>
                             <input type="password" name="password" id="password" placeholder="Password"/>
                         </div>
                         <div class="form-group">
-                            <input type="checkbox" name="remember-me" id="remember-me" class="agree-term" />
-                            <label for="remember-me" class="label-agree-term"><span><span></span></span>Remember me</label>
+                            <input type="checkbox" name="remember-me" id="remember-me" class="agree-term"/>
+                            <label for="remember-me" class="label-agree-term"><span><span></span></span>Remember
+                                me</label>
                         </div>
                         <div class="form-group form-button">
                             <input type="submit" name="signin" id="signin" class="form-submit" value="Log in"/>
@@ -92,8 +101,6 @@
         </div>
     </div>
 </section>
-
-
 
 
 <!-- JS -->

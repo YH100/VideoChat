@@ -1,13 +1,15 @@
 // -------------------- Requires --------------------
-var express = require('express');
-var browserify = require('browserify-middleware');
-var session = require('express-session');
-var app = express();
-var bodyParser = require('body-parser');
-var sqlite3Sync = getSyncSqlite3();
+const express = require('express');
+const browserify = require('browserify-middleware');
+const session = require('express-session');
+const app = express();
+const mailer = require('express-mailer');
+const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
+const sqlite3Sync = getSyncSqlite3();
 const sqlite3 = require('sqlite3').verbose();
-var flash = require('connect-flash-plus');
-var redis = require("redis");
+const flash = require('connect-flash-plus');
+const redis = require("redis");
 const util = require('util');
 const simpleNodeLogger = require('simple-node-logger');
 
@@ -35,6 +37,19 @@ app.use(session({
 }));
 app.use(flash());
 
+var passwordRecoveries = {}; // { email -> code }
+
+// mailer.extend(app, {
+//     from: 'yhvideochat2019@gmail.com',
+//     host: 'smtp.gmail.com', // hostname
+//     secureConnection: true, // use SSL
+//     port: 465, // port for secure SMTP
+//     transportMethod: 'SMTP', // default is SMTP. Accepts anything that nodemailer accepts
+//     auth: {
+//         user: 'yhvideochat2019@gmail.com',
+//         pass: 'VideoChat1234'
+//     }
+// });
 
 // -------------------- Socket.io --------------------
 var http = require("http").Server(app);
@@ -492,9 +507,151 @@ app.post('/SignUpForm', async function (req, res) {
 
 app.get('/index.js', browserify('./public/index.js'));
 
+app.post('/passwordRecoveryStep3', async function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryStep3  -------------------");
+    var newPassword = req.body.password1;
+    var email = req.session.email;
+
+    log.info(`PasswordRecoveryStep3: new password: ${newPassword}, email: ${email}`);
+
+    try {
+        await sqlite3Sync.open('try.db');
+        let sql = "UPDATE Users SET Password = '" + newPassword + "' WHERE Email = '" + email + "'";
+        log.info("sql query is: " + sql);
+        sqlite3Sync.run(sql, function (err) {
+            if (err) {
+                log.info("err insert: " + err.message);
+            } else {
+                db.close((err) => {
+                    if (err) {
+                        console.error(err.message);
+                    }
+                    log.info('Close the database connection.');
+                    return true;
+                });
+
+                let msg = "Your password changed successfully";
+                res.render("login.", {message: msg});
+            }
+        });
+        sqlite3Sync.close();
+        res.redirect('login');
+    } catch (e) {
+        console.error('got error: ' + e);
+        res.sendStatus(503);
+        return;
+    }
+});
+
+app.post('/passwordRecoveryStep2', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryStep2  -------------------");
+    var code = req.body.code;
+    var email = req.session.email;
+
+    log.info(`PasswordRecoveryStep2: code: ${code}, email: ${email}`);
+
+    if (passwordRecoveries[email] == code) {
+        log.info('success');
+        res.redirect('passwordRecoveryStep3Form');
+    } else {
+        log.info('code is not corect');
+        res.redirect('/');
+    }
+});
+
+app.post('/passwordRecovery', async function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecovery  -------------------");
+    var email = req.body.email;
+    log.info('email: ' + email);
+
+    req.session.email = email;
+
+    try {
+        await sqlite3Sync.open('try.db');
+        let sql = "SELECT * FROM Users WHERE Email = '" + email + "'";
+        log.info("sql query is: " + sql);
+        r = await sqlite3Sync.get(sql);
+        var isExist = r !== undefined;
+        log.info('isExist: ' + isExist);
+        sqlite3Sync.close();
+    } catch (e) {
+        console.error('got error: ' + e);
+        res.sendStatus(503);
+        return;
+    }
+
+    if (isExist) {
+        var code = Math.floor(100000 + Math.random() * 900000);
+        passwordRecoveries[email] = code;
+
+        log.info(`Password recovery code is: ${code} for email: ${email}`);
+
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'yhvideochat2019@gmail.com',
+                pass: 'VideoChat1234'
+            }
+        });
+
+        var mailOptions = {
+            from: 'yhvideochat2019@gmail.com',
+            to: email,
+            subject: 'Password Recovery for your Simple Connect Account',
+            text: 'Your password recovery code is: ' + code
+        };
+
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
+
+
+        // app.mailer.send('email', {
+        //     to: 'example@example.com', // REQUIRED. This can be a comma delimited string just like a normal email to field.
+        //     subject: 'Test Email', // REQUIRED.
+        //     otherProperty: 'Other Property' // All additional properties are also passed to the template as local variables.
+        // }, function (err) {
+        //     if (err) {
+        //         // handle error
+        //         console.log(err);
+        //         res.send('There was an error sending the email');
+        //         return;
+        //     }
+        //     res.send('Email Sent');
+        // });
+
+
+        res.redirect('passwordRecoveryStep2Form');
+    } else {
+        let msg = "Email is not exist";
+        res.render("login.", {message: msg});
+    }
+});
+
+app.get('/passwordRecoveryForm', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecovery  -------------------");
+    app.use(express.static(__dirname + '/' + 'public'));
+    res.sendFile(__dirname + "/public/html/passwordRecovery.html");
+});
+
+app.get('/passwordRecoveryStep2Form', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryStep2Form  -------------------");
+    app.use(express.static(__dirname + '/' + 'public'));
+    res.sendFile(__dirname + "/public/html/passwordRecoveryStep2.html");
+});
+
+app.get('/passwordRecoveryStep3Form', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryStep3Form  -------------------");
+    app.use(express.static(__dirname + '/' + 'public'));
+    res.sendFile(__dirname + "/public/html/passwordRecoveryStep3.html");
+});
 
 // -------------------- Start Server --------------------
-log.info('Site Directory Name: ' + __dirname)
+log.info('Site Directory Name: ' + __dirname);
 var server = http.listen(8081, function () {
     var host = server.address().address;
     var port = server.address().port;
@@ -504,7 +661,7 @@ var server = http.listen(8081, function () {
 
 // -------------------- Data Base --------------------
 async function isUserInDb(email, password) {
-    log.info("Execting isUserInDb")
+    log.info("Execting isUserInDb");
     let db = new sqlite3.Database('try.db', (err) => {
         if (err) {
             console.error(err.message);
@@ -621,7 +778,8 @@ function getSyncSqlite3() {
         return new Promise(function (resolve) {
             this.db = new sqlite3.Database(path,
                 function (err) {
-                    if (err) reject("Open error: " + err.message)
+                    if (err)
+                        reject("Open error: " + err.message)
                     else resolve(path + " opened")
                 }
             )
@@ -633,7 +791,8 @@ function getSyncSqlite3() {
         return new Promise(function (resolve, reject) {
             this.db.run(query, params,
                 function (err) {
-                    if (err) reject(err.message)
+                    if (err)
+                        reject(err.message);
                     else resolve(true)
                 })
         })
@@ -643,7 +802,8 @@ function getSyncSqlite3() {
     db.get = function (query, params) {
         return new Promise(function (resolve, reject) {
             this.db.get(query, params, function (err, row) {
-                if (err) reject("Read error: " + err.message)
+                if (err)
+                    reject("Read error: " + err.message);
                 else {
                     resolve(row)
                 }
@@ -654,7 +814,7 @@ function getSyncSqlite3() {
 // set of rows read
     db.all = function (query, params) {
         return new Promise(function (resolve, reject) {
-            if (params == undefined) params = []
+            if (params == undefined) params = [];
 
             this.db.all(query, params, function (err, rows) {
                 if (err)
@@ -669,7 +829,7 @@ function getSyncSqlite3() {
 // each row returned one by one
     db.each = function (query, params, action) {
         return new Promise(function (resolve, reject) {
-            var db = this.db
+            var db = this.db;
             db.serialize(function () {
                 db.each(query, params, function (err, row) {
                     if (err) reject("Read error: " + err.message)
@@ -678,7 +838,7 @@ function getSyncSqlite3() {
                             action(row)
                         }
                     }
-                })
+                });
                 db.get("", function (err, row) {
                     resolve(true)
                 })
@@ -688,8 +848,8 @@ function getSyncSqlite3() {
 
     db.close = function () {
         return new Promise(function (resolve, reject) {
-            this.db.close()
-            resolve(true)
+            this.db.close();
+            resolve(true);
         })
     };
     return db;
