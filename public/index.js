@@ -59,7 +59,7 @@ window.initiateVideoChat = function () {
             video.srcObject = stream;
             video.play();                                                              //Strat the striming
             var elem = document.getElementById("videoMain");
-
+            var bac = document.getElementById("mainfeed").style.backgroundImage = null;
             // Create also my video
             var myVideo = document.getElementById('myVideo');
             myVideo.setAttribute('playsinline', '');

@@ -72,7 +72,10 @@
                             <h5>Hello:</h5>
                             <div id="myContact" align="left"></div>
                             <hr style="border-color: black"/>
-                            <div id="contactList" align="left">
+                             <h5> connected users</h5>
+
+                            <div id="contactList" align="left"><
+
                                 <!--
                                 <button class="chip">
                                     <img src="https://www.w3schools.com/howto/img_avatar.png" alt="Person" width="96" height="96">
@@ -93,7 +96,8 @@
                 </table>
             </td>
 
-            <td width="50%" height="400px"
+
+            <td id = "mainfeed" width="50%" height="400px"
                 style="background-image: url('https://www.redbytes.in/wp-content/uploads/2018/10/516Z2skgMML._SY355_.jpg')">
                 <!--<img id="logo" src="http://i63.tinypic.com/vz92y8.png" />-->
                 <table width="100%">
@@ -111,13 +115,28 @@
                                     End Call
                                 </button>
                                 <div id="callButtons" style="visibility: hidden">
-                                    <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
-                                           data-off="Disabled" id="mute"/> Mute
-                                    <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
-                                           data-off="Disabled" id="sendVideo"/> Send Video
+                                    <table>
+                                        <tr>
+                                            <th>
+                                                Send Voice
+                                            </th>
+                                            <th>
+                                                Send Video
+                                            </th>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
+                                                       data-off="Disabled" id="mute"/>
+                                            </td>
+                                            <td> <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
+                                                        data-off="Disabled" id="sendVideo"/>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                                 <br/>
-                                <div id="loading" class="loader" style="visibility: hidden;">Calling:</div>
+                                <div id="loading" class="loader" style="visibility: hidden;"><h4>Calling</h4></div>
                             </center>
                         </td>
                     </tr>
@@ -225,6 +244,8 @@
             document.getElementById('callWindow').style.display = "block"; // block / inline
             //TODO: map email to name
 
+            window.targetUser = msg.requesterEmail;
+
             document.getElementById('answer').onclick = function () {
                 document.getElementById('callWindow').style.display = "none";
                 userAnswer();
@@ -232,6 +253,11 @@
 
             document.getElementById('deny').onclick = function () {
                 document.getElementById('callWindow').style.display = "none";
+
+                socket.emit('denyVideoChat', {
+                    denyUser: window.originalUser,
+                    deniedUser: window.targetUser
+                });
             };
 
             function userAnswer() {
@@ -250,7 +276,7 @@
                         originalEmail: requesterEmail,
                         answaredId: myId
                     });
-                }, 40000);
+                }, 8000);
             }
         });
 
@@ -265,6 +291,12 @@
                 originalUser: window.originalUser,
                 targetUser: window.targetUser
             });
+        });
+
+        socket.on('deniedVideoChat', function (msg) {
+            console.log('deny for video chat from: ' + msg.denyUser);
+            alert(`The user ${msg.denyUser} can not accept your call.`);
+            document.getElementById('loading').style.display = "none";
         });
 
         socket.on('clientsOnCallUpdate', function (data) {
@@ -318,14 +350,26 @@
         };
 
         document.getElementById('mute').onchange = function (event) {
+            var audioTracks = document.getElementById('myVideo').srcObject.getAudioTracks();
+
             if (event.target.checked) {
-                document.getElementById('myVideo').srcObject.getAudioTracks()[0].enabled = true;
+                if (audioTracks.length > 0)
+                    audioTracks[0].enabled = true;
                 sendSpecialCommand('AUDIO_ON');
             } else {
-                document.getElementById('myVideo').srcObject.getAudioTracks()[0].enabled = false;
+                if (audioTracks.length > 0)
+                    audioTracks[0].enabled = false;
                 sendSpecialCommand('AUDIO_OFF');
             }
         };
+
+        $('#closeMyVideoBtn').change(function() {
+            var newState = $(this).prop('checked');
+            if (newState)
+                $('#myVideo')[0].style.visibility = "visible";
+            else
+                $('#myVideo')[0].style.visibility = "hidden";
+        })
 
 
         // var sendButton = document.getElementById("btnSend");
@@ -396,7 +440,11 @@
                 $('#targetEmail').val(currentUserEmail)
                 window.targetUser = currentUserEmail;
                 $('#startConversation').click();
-            }, 40000);
+            }, 8000);
+
+            setTimeout(function () {
+                $('#loading')[0].style.visibility = 'hidden';
+            }, 120000);
         };
         var textNode = document.createTextNode(email);
         button.appendChild(textNode);

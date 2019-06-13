@@ -266,12 +266,31 @@ io.sockets.on('connection', function (socket) {
         // sending to individual socketid
 
         if (!clients.hasOwnProperty(data.originalEmail))
-            log.info(`user ${data.originalEmail} in the server! clients: ${util.inspect(clients, false, null, true)}`);
+            log.info(`user ${data.originalEmail} is not in the server! clients: ${util.inspect(clients, false, null, true)}`);
         else {
             var originalUserSocket = clients[data.originalEmail].socket;
             log.info('originalUserSocket is: ' + originalUserSocket + ' of mail: ' + data.originalEmail);
             socket.broadcast.to(originalUserSocket).emit('ansForVideoChat', {
                 peerId: data.answaredId
+            });
+        }
+        log.info('--------------------------------');
+    });
+
+    //***Socket io denyVideoChat function - General use ************
+    socket.on('denyVideoChat', function (data) {
+        log.info('----- Socket io function: denyVideoChat called -----');
+        log.info('deny user: ' + data.denyUser);
+        log.info('deniedUser user: ' + data.deniedUser);
+
+        // sending to individual socketid
+        if (!clients.hasOwnProperty(data.deniedUser))
+            log.info(`user ${data.deniedUser} is not in the server! clients: ${util.inspect(clients, false, null, true)}`);
+        else {
+            var deniedUserSocket = clients[data.deniedUser].socket;
+            log.info('denied UserSocket is: ' + deniedUserSocket + ' of mail: ' + data.deniedUser);
+            socket.broadcast.to(deniedUserSocket).emit('deniedVideoChat', {
+                denyUser: data.denyUser
             });
         }
         log.info('--------------------------------');
@@ -454,15 +473,16 @@ app.post('/loginForm', async function (req, res) {
 
 app.post('/SignUpForm', async function (req, res) {
     log.info("-------------------- Got a Post request for SignUpForm -------------------");
-    log.info('signUpForm: ' + req.body.re_pass);
-    log.info('signUpForm: ' + req.body.nickName);
-    log.info('signUpForm: ' + req.body.email);
-    log.info('signUpForm: ' + req.body.pass);
 
     var nickName = req.body.nickName;
-    var name = req.body.name;
-    var password = req.body.re_pass;
+    var password = req.body.pass;
+    var rePassword = req.body.re_pass;
     var email = req.body.email;
+
+    log.info('signUpForm password: ' + password);
+    log.info('signUpForm re password: ' + rePassword);
+    log.info('signUpForm nickName: ' + nickName);
+    log.info('signUpForm email: ' + email);
 
     try {
         await sqlite3Sync.open('try.db');
@@ -471,7 +491,7 @@ app.post('/SignUpForm', async function (req, res) {
                                  count(case when Email = '${email}' then 1 end) >= 1 as IsEmailExist
                           from Users`;
 
-        log.info("sql query to check if nick namd and email already exist is: " + checkIfsql);
+        log.info("sql query to check if nick namd and email already exist is:\n" + checkIfsql);
         var result = await sqlite3Sync.get(checkIfsql);
         if (result.IsNickExist == 1) {
             var msg = `nickName: ${nickName} already exist`;
@@ -485,9 +505,9 @@ app.post('/SignUpForm', async function (req, res) {
             return;
         }
         let sql = `INSERT INTO Users(NickName, Password, Email) VALUES(?,?,?)`;
-        log.info("sql query is: " + sql);
+        log.info("sql query for insert new user is: " + sql);
 
-        var isAdded = await sqlite3Sync.run(sql, [name, password, email]);
+        var isAdded = await sqlite3Sync.run(sql, [nickName, password, email]);
         sqlite3Sync.close();
     } catch (e) {
         console.error('got error: ' + e);
@@ -498,6 +518,7 @@ app.post('/SignUpForm', async function (req, res) {
     // var i = addUserInDb(req.body.name, req.body.re_pass, req.body.email);
     log.info("isAdded: " + isAdded);
     if (isAdded) {
+        req.session.email = email;
         res.redirect("/")
     } else {
         res.sendStatus(404);
@@ -509,7 +530,7 @@ app.get('/index.js', browserify('./public/index.js'));
 
 app.post('/passwordRecoveryStep3', async function (req, res) {
     log.info("-------------------- Got a GET request for passwordRecoveryStep3  -------------------");
-    var newPassword = req.body.password1;
+    var newPassword = req.body.password;
     var email = req.session.email;
 
     log.info(`PasswordRecoveryStep3: new password: ${newPassword}, email: ${email}`);
@@ -529,6 +550,8 @@ app.post('/passwordRecoveryStep3', async function (req, res) {
                     log.info('Close the database connection.');
                     return true;
                 });
+
+                passwordRecoveries[email] = null;
 
                 let msg = "Your password changed successfully";
                 res.render("login.", {message: msg});
@@ -554,8 +577,9 @@ app.post('/passwordRecoveryStep2', function (req, res) {
         log.info('success');
         res.redirect('passwordRecoveryStep3Form');
     } else {
-        log.info('code is not corect');
-        res.redirect('/');
+        var msg = 'code is not correct';
+        log.info(msg);
+        res.render("passwordRecoveryStep2", {message: msg});
     }
 });
 
@@ -610,25 +634,10 @@ app.post('/passwordRecovery', async function (req, res) {
         });
 
 
-        // app.mailer.send('email', {
-        //     to: 'example@example.com', // REQUIRED. This can be a comma delimited string just like a normal email to field.
-        //     subject: 'Test Email', // REQUIRED.
-        //     otherProperty: 'Other Property' // All additional properties are also passed to the template as local variables.
-        // }, function (err) {
-        //     if (err) {
-        //         // handle error
-        //         console.log(err);
-        //         res.send('There was an error sending the email');
-        //         return;
-        //     }
-        //     res.send('Email Sent');
-        // });
-
-
         res.redirect('passwordRecoveryStep2Form');
     } else {
         let msg = "Email is not exist";
-        res.render("login.", {message: msg});
+        res.render("passwordRecovery.", {message: msg});
     }
 });
 
