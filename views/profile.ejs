@@ -72,7 +72,7 @@
                             <h5>Hello:</h5>
                             <div id="myContact" align="left"></div>
                             <hr style="border-color: black"/>
-                             <h5> connected users</h5>
+                            <h5> connected users</h5>
 
                             <div id="contactList" align="left"><
 
@@ -97,7 +97,7 @@
             </td>
 
 
-            <td id = "mainfeed" width="50%" height="400px"
+            <td id="mainfeed" width="50%" height="400px"
                 style="background-image: url('https://www.redbytes.in/wp-content/uploads/2018/10/516Z2skgMML._SY355_.jpg')">
                 <!--<img id="logo" src="http://i63.tinypic.com/vz92y8.png" />-->
                 <table width="100%">
@@ -115,25 +115,11 @@
                                     End Call
                                 </button>
                                 <div id="callButtons" style="visibility: hidden">
-                                    <table>
-                                        <tr>
-                                            <th>
-                                                Send Voice
-                                            </th>
-                                            <th>
-                                                Send Video
-                                            </th>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
-                                                       data-off="Disabled" id="mute"/>
-                                            </td>
-                                            <td> <input type="checkbox" checked data-toggle="toggle" data-on="Enabled"
-                                                        data-off="Disabled" id="sendVideo"/>
-                                            </td>
-                                        </tr>
-                                    </table>
+                                    <img id="audioButton" src="https://image.flaticon.com/icons/svg/39/39517.svg"
+                                         width="50" height="50"> <!-- audio -->
+                                    <img id="videoButton"
+                                         src="https://cdn0.iconfinder.com/data/icons/video-actions-files/24/camera_record_cam_movie_film_disable_no-512.png"
+                                         width="50" height="50"> <!--video-->
                                 </div>
                                 <br/>
                                 <div id="loading" class="loader" style="visibility: hidden;"><h4>Calling</h4></div>
@@ -154,7 +140,8 @@
                     <!-- <form action="http://localhost:5000/message" class="form" method="post"> -->
                     <form action="" class="form" method="post" onSubmit="return false">
                         <div class="chat-form">
-                            <input id="textfield" placeholder="Write your message here" name="messagefield" type="text" onkeyup="stoppedTyping()">
+                            <input id="textfield" placeholder="Write your message here" name="messagefield" type="text"
+                                   onkeyup="stoppedTyping()">
                             <button id="btnSend">Send</button>
                             <input type="hidden" value="foo" name="user_id"/>
                         </div>
@@ -328,6 +315,11 @@
     }
 
     window.onload = function () {
+        window.videoChatStat = {
+            isSendingVideo: false,
+            isSendingAudio: false
+        };
+
         console.log("Chat page has been loaded");
 
         $('#endCall').click(function () {
@@ -339,31 +331,43 @@
             }
         });
 
-        document.getElementById('sendVideo').onchange = function (event) {
-            if (event.target.checked) {
-                document.getElementById('myVideo').srcObject.getVideoTracks()[0].enabled = true;
+        document.getElementById('videoButton').onclick = function (event) {
+            var videoTracks = document.getElementById('myVideo').srcObject.getVideoTracks();
+
+            if (!window.videoChatStat.isSendingVideo) {
+                window.videoChatStat.isSendingVideo = true;
+                this.src = 'https://cdn0.iconfinder.com/data/icons/video-actions-files/24/camera_record_cam_movie_film_disable_no-512.png';
+                if (videoTracks.length > 0)
+                    videoTracks[0].enabled = true;
                 sendSpecialCommand('VIDEO_ON');
             } else {
-                document.getElementById('myVideo').srcObject.getVideoTracks()[0].enabled = false;
+                window.videoChatStat.isSendingVideo = false;
+                this.src = 'http://ipropertymedia.ca/wp-content/uploads/2015/11/video-cam-icon.png';
+                if (videoTracks.length > 0)
+                    videoTracks[0].enabled = false;
                 sendSpecialCommand('VIDEO_OFF');
             }
         };
 
-        document.getElementById('mute').onchange = function (event) {
+        document.getElementById('audioButton').onclick = function (event) {
             var audioTracks = document.getElementById('myVideo').srcObject.getAudioTracks();
 
-            if (event.target.checked) {
+            if (!window.videoChatStat.isSendingAudio) {
+                window.videoChatStat.isSendingAudio = true;
+                this.src = 'https://image.flaticon.com/icons/svg/39/39517.svg';
                 if (audioTracks.length > 0)
                     audioTracks[0].enabled = true;
                 sendSpecialCommand('AUDIO_ON');
             } else {
+                window.videoChatStat.isSendingAudio = false;
+                this.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSECKmguesfSHxGievwLyyZroJI7yfugkk5IugriHVLXkLwUDIc';
                 if (audioTracks.length > 0)
                     audioTracks[0].enabled = false;
                 sendSpecialCommand('AUDIO_OFF');
             }
         };
 
-        $('#closeMyVideoBtn').change(function() {
+        $('#closeMyVideoBtn').change(function () {
             var newState = $(this).prop('checked');
             if (newState)
                 $('#myVideo')[0].style.visibility = "visible";
@@ -499,8 +503,8 @@
         }
     }
 
-    function stoppedTyping(){
-        if(document.getElementById("textfield").value.length > 0) {
+    function stoppedTyping() {
+        if (document.getElementById("textfield").value.length > 0) {
             document.getElementById("btnSend").disabled = false;
         } else {
             document.getElementById("btnSend").disabled = true;

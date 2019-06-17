@@ -83,9 +83,11 @@ window.initiateVideoChat = function () {
                 myVideo.srcObject = stream;
             });
 
-
             var endCallButton = document.getElementById('endCall')
             endCallButton.style.visibility = 'visible';
+
+            window.videoChatStat.isSendingVideo = true;
+            window.videoChatStat.isSendingAudio = true;
         })
     });
 };

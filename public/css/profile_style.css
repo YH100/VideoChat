@@ -151,10 +151,14 @@ td {
     background: #fff;
 }
 
+#myContact {
+    position: relative;
+}
+
 .chat-form button {
     background: #1ddced;
     padding: 5px 15px;
-    font-size: 30px;
+    font-size: 25px;
     color: #fff;
     border: none;
     margin: 0 10px;
@@ -194,6 +198,6 @@ div.c {
     font-weight: bold;
 }
 
-div.alert alert-success{
+div.alert alert-success {
     font-size: 20px;
 }
