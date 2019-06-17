@@ -39,8 +39,26 @@
                 alert('You must enter email');
                 return false;
             }
-            if (password.length < 6) {
-                alert('Password length must be at least 6 characters');
+            if (password.length < 8) {
+                alert('Password length must be at least 8 characters');
+                return false;
+            }
+            if (!password.split("").some(function(element) {
+                return ((element >= 'a') && (element <= 'z'))
+            })) {
+                alert('Password must contains at least one lowercase character');
+                return false;
+            }
+            if (!password.split("").some(function(element) {
+                return ((element >= 'A') && (element <= 'Z'))
+            })) {
+                alert('Password must contains at least one uppercase character');
+                return false;
+            }
+            if (!password.split("").some(function(element) {
+                return ((element >= '0') && (element <= '9'))
+            })) {
+                alert('Password must contains at least one digit character');
                 return false;
             }
             if (password != passwordRepeat) {

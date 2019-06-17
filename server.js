@@ -114,11 +114,15 @@ io.sockets.on('connection', function (socket) {
         log.info('----- Socket io function: disconnect called -----');
         log.info('deleting user, with socket id: ' + socket.id);
 
+
         log.info('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
         var userEmail = getUserEmailBySocketId(clients, socket.id);
         log.info('the user email is: ' + userEmail);
         delete clients[userEmail];
         log.info('clients after: ' + util.inspect(clients, false, null, true /* enable colors */));
+
+        clientsOnCall.delete(userEmail);
+        io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
 
         io.emit('contactListChanged', {
             allClients: clients
@@ -153,7 +157,7 @@ io.sockets.on('connection', function (socket) {
     socket.on('add-user', function (data) {
         log.info('-----Socket io function: add-user called -----');
         log.info("Adding new user, details:  " + util.inspect(data, false, null, true /* enable colors */));
-
+        io.emit('clientsOnCallUpdate', Array.from(clientsOnCall));
         log.info('clients before: ' + util.inspect(clients, false, null, true /* enable colors */));
         clients[data.email] = {
             "socket": socket.id
@@ -627,17 +631,18 @@ app.post('/passwordRecovery', async function (req, res) {
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
-                console.log(error);
+                log.error(error);
             } else {
-                console.log('Email sent: ' + info.response);
+                log.info('Email sent: ' + info.response);
             }
         });
-
 
         res.redirect('passwordRecoveryStep2Form');
     } else {
         let msg = "Email is not exist";
-        res.render("passwordRecovery.", {message: msg});
+        log.info(msg);
+        // res.render("passwordRecovery.", {message: msg});
+        res.redirect('passwordRecoveryErrorForm');
     }
 });
 
@@ -657,6 +662,22 @@ app.get('/passwordRecoveryStep3Form', function (req, res) {
     log.info("-------------------- Got a GET request for passwordRecoveryStep3Form  -------------------");
     app.use(express.static(__dirname + '/' + 'public'));
     res.sendFile(__dirname + "/public/html/passwordRecoveryStep3.html");
+});
+
+app.get('/passwordRecoveryErrorForm', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryErrorForm  -------------------");
+    app.use(express.static(__dirname + '/' + 'public'));
+    var msg = 'email is not correct';
+    log.info(msg);
+    res.render("passwordRecovery", {message: msg});
+});
+
+app.get('/passwordRecoveryError2Form', function (req, res) {
+    log.info("-------------------- Got a GET request for passwordRecoveryError2Form  -------------------");
+    app.use(express.static(__dirname + '/' + 'public'));
+    var msg = 'code is not correct';
+    log.info(msg);
+    res.render("passwordRecoveryStep2", {message: msg});
 });
 
 // -------------------- Start Server --------------------
