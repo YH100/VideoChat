@@ -17,6 +17,7 @@ window.initiateVideoChat = function () {
             document.getElementById('yourId').value = JSON.stringify(data)
             var time = (window.performance.now() - startTime) / 1000;
             console.log(time + ' seconds');
+            window.onGettingSignal();
         });
 
         document.getElementById('connect').onclick = function () {
