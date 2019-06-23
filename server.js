@@ -21,6 +21,7 @@ const opts = {
     timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
 };
 var log = simpleNodeLogger.createSimpleLogger(opts);
+var dbName = 'ConnectEasierDB.db';
 
 
 // -------------------- app.use --------------------
@@ -439,7 +440,7 @@ app.post('/loginForm', async function (req, res) {
     log.info(`got userName: ${userName}, password: ${password}`);
 
     try {
-        await sqlite3Sync.open('try.db');
+        await sqlite3Sync.open(dbName);
         let sql = "SELECT * FROM Users WHERE Email = '" + userName + "' AND Password = '" + password + "'";
         log.info("sql query is: " + sql);
         r = await sqlite3Sync.get(sql);
@@ -478,7 +479,7 @@ app.post('/SignUpForm', async function (req, res) {
     log.info('signUpForm email: ' + email);
 
     try {
-        await sqlite3Sync.open('try.db');
+        await sqlite3Sync.open(dbName);
 
         let checkIfsql = `select count(case when NickName = '${nickName}' then 1 end) >= 1 as IsNickExist,
                                  count(case when Email = '${email}' then 1 end) >= 1 as IsEmailExist
@@ -529,7 +530,7 @@ app.post('/passwordRecoveryStep3', async function (req, res) {
     log.info(`PasswordRecoveryStep3: new password: ${newPassword}, email: ${email}`);
 
     try {
-        await sqlite3Sync.open('try.db');
+        await sqlite3Sync.open(dbName);
         let sql = "UPDATE Users SET Password = '" + newPassword + "' WHERE Email = '" + email + "'";
         log.info("sql query is: " + sql);
         sqlite3Sync.run(sql, function (err) {
@@ -584,7 +585,7 @@ app.post('/passwordRecovery', async function (req, res) {
     req.session.email = email;
 
     try {
-        await sqlite3Sync.open('try.db');
+        await sqlite3Sync.open(dbName);
         let sql = "SELECT * FROM Users WHERE Email = '" + email + "'";
         log.info("sql query is: " + sql);
         r = await sqlite3Sync.get(sql);
@@ -681,7 +682,7 @@ var server = http.listen(8081, function () {
 // -------------------- Data Base --------------------
 async function isUserInDb(email, password) {
     log.info("Execting isUserInDb");
-    let db = new sqlite3.Database('try.db', (err) => {
+    let db = new sqlite3.Database(dbName, (err) => {
         if (err) {
             console.error(err.message);
             return false;
@@ -743,7 +744,7 @@ async function isUserInDb(email, password) {
 }
 
 async function addUserInDb(name, password, email) {
-    let db = new sqlite3.Database('try.db', (err) => {
+    let db = new sqlite3.Database(dbName, (err) => {
         if (err) {
             console.error(err.message);
             db.close((err) => {
