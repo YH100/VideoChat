@@ -167,7 +167,7 @@
 
 <br/><br/><br/>
 
-<div style="display: block;background-color: antiquewhite;width: 20%">
+<div style="display: none;background-color: antiquewhite;width: 20%">
     <hr/>
     <label>Your ID:</label><br/>
     <textarea id="yourId"></textarea><br/>
@@ -367,13 +367,13 @@
 
             if (!window.videoChatStat.isSendingAudio) {
                 window.videoChatStat.isSendingAudio = true;
-                this.src = 'https://image.flaticon.com/icons/png/512/107/107037.png';
+                this.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSECKmguesfSHxGievwLyyZroJI7yfugkk5IugriHVLXkLwUDIc';
                 if (audioTracks.length > 0)
                     audioTracks[0].enabled = true;
                 sendSpecialCommand('AUDIO_ON');
             } else {
                 window.videoChatStat.isSendingAudio = false;
-                this.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSECKmguesfSHxGievwLyyZroJI7yfugkk5IugriHVLXkLwUDIc';
+                this.src = 'https://image.flaticon.com/icons/svg/39/39517.svg';
                 if (audioTracks.length > 0)
                     audioTracks[0].enabled = false;
                 sendSpecialCommand('AUDIO_OFF');
