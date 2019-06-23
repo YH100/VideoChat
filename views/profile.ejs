@@ -36,16 +36,20 @@
 </head>
 <body>
 <div align="center" id="body">
+
     <br/><br/>
     <!-- ----------------------------------------------------------------------------------------------------------  -->
     <div id="callHasEndedMessage" class="alert alert-success" role="alert" style="display: none;">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                    aria-hidden="true">&times;</span></button>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <center><span>
+                  </span></center>
+        </button>
         Call has ended
     </div>
 
     <div id="callWindow" style="display: none;">
         <div class="alert alert-success" role="alert">
+
             <div class="c" style="text-align: center;">
                 Incoming call from <strong><label id="callerName"></label></strong>
                 <br/><br/>
@@ -111,14 +115,20 @@
                             <center>
                                 <video id="videoMain"></video>
                                 <br/>
+                                <br/>
+                                <br/>
                                 <button type="button" class="btn btn-danger" id="endCall" style="visibility: hidden;">
                                     End Call
                                 </button>
+                                <br/>
+                                <br/>
                                 <div id="callButtons" style="visibility: hidden">
-                                    <img id="audioButton" src="https://image.flaticon.com/icons/svg/39/39517.svg"
-                                         width="50" height="50"> <!-- audio -->
+                                    <img id="audioButton"
+                                         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSECKmguesfSHxGievwLyyZroJI7yfugkk5IugriHVLXkLwUDIc"
+                                         width="40" height="40"> <!-- audio --> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                    &nbsp;
                                     <img id="videoButton"
-                                         src="https://cdn0.iconfinder.com/data/icons/video-actions-files/24/camera_record_cam_movie_film_disable_no-512.png"
+                                         src="http://ipropertymedia.ca/wp-content/uploads/2015/11/video-cam-icon.png"
                                          width="50" height="50"> <!--video-->
                                 </div>
                                 <br/>
@@ -152,45 +162,37 @@
     </table>
 
 </div>
-<hr/>
-
 
 <!-- ----------------------------------------------------------------------------------------------------------  -->
 
-
-<!-- ----------------------------------------------------------------------------------------------------------  -->
-
-<hr/>
 <br/><br/><br/>
 
-<label>Your ID:</label><br/>
-<textarea id="yourId"></textarea><br/>
-<label>Other ID:</label><br/>
-<textarea id="otherId"></textarea>
-<button id="connect">connect</button>
-<br/>
+<div style="display: block;background-color: antiquewhite;width: 20%">
+    <hr/>
+    <label>Your ID:</label><br/>
+    <textarea id="yourId"></textarea><br/>
+    <label>Other ID:</label><br/>
+    <textarea id="otherId"></textarea>
+    <button id="connect">connect</button>
+    <br/>
 
-<label>Enter Message:</label><br/>
-<textarea id="yourMessage"></textarea>
-<button id="send">send</button>
-<pre id="messages"></pre>
-
-
-<ul id="messages"></ul>
-<hr/>
-<form action="" id="videoChatForm">
-    Please enter partner email: <input id="targetEmail" autocomplete="off"/>
-    <br/><br/>
-    Please enter your video id: <input id="myVideoId" autocomplete="off"/>
-    <br/> <br/>
-    <!--<button id="start">Start Conversation</button>-->
-    <input type="submit" id="startConversation" value="Start Conversation"/>
-</form>
-<hr/>
+    <label>Enter Message:</label><br/>
+    <textarea id="yourMessage"></textarea>
+    <button id="send">send</button>
+    <pre id="messages"></pre>
 
 
-<div id="myvid">
-    dsfdsf123
+    <ul id="messages"></ul>
+    <hr/>
+    <form action="" id="videoChatForm">
+        Please enter partner email: <input id="targetEmail" autocomplete="off"/>
+        <br/><br/>
+        Please enter your video id: <input id="myVideoId" autocomplete="off"/>
+        <br/> <br/>
+        <!--<button id="start">Start Conversation</button>-->
+        <input type="submit" id="startConversation" value="Start Conversation"/>
+    </form>
+    <hr/>
 </div>
 
 <script language="JavaScript">
@@ -229,22 +231,29 @@
             console.log('asked for video chat: ' + msg);
             document.getElementById('callerName').textContent = msg.requesterEmail;
             document.getElementById('callWindow').style.display = "block"; // block / inline
+            var myMusicR = document.getElementById("musicR");
+            myMusicR.currentTime = 0;
+            myMusicR.play();
             //TODO: map email to name
 
             window.targetUser = msg.requesterEmail;
 
             document.getElementById('answer').onclick = function () {
+                var myMusicR = document.getElementById("musicR");
+                myMusicR.pause();
                 document.getElementById('callWindow').style.display = "none";
                 userAnswer();
             };
 
             document.getElementById('deny').onclick = function () {
                 document.getElementById('callWindow').style.display = "none";
-
                 socket.emit('denyVideoChat', {
                     denyUser: window.originalUser,
                     deniedUser: window.targetUser
                 });
+                document.location.reload();
+                window.initiateVideoChat();
+                window.location.href = "http://" + location.hostname + ":8081/";
             };
 
             function userAnswer() {
@@ -273,7 +282,8 @@
             var otherPeerId = msg.peerId;
             $('#otherId').val(otherPeerId)
             $('#connect').click();
-
+            var myMusic = document.getElementById("musicC");
+            myMusic.pause();
             socket.emit('videoChatCreated', {
                 originalUser: window.originalUser,
                 targetUser: window.targetUser
@@ -284,6 +294,9 @@
             console.log('deny for video chat from: ' + msg.denyUser);
             alert(`The user ${msg.denyUser} can not accept your call.`);
             document.getElementById('loading').style.display = "none";
+            document.location.reload();
+            window.initiateVideoChat();
+            window.location.href = "http://" + location.hostname + ":8081/";
         });
 
         socket.on('clientsOnCallUpdate', function (data) {
@@ -336,13 +349,13 @@
 
             if (!window.videoChatStat.isSendingVideo) {
                 window.videoChatStat.isSendingVideo = true;
-                this.src = 'https://cdn0.iconfinder.com/data/icons/video-actions-files/24/camera_record_cam_movie_film_disable_no-512.png';
+                this.src = 'http://ipropertymedia.ca/wp-content/uploads/2015/11/video-cam-icon.png';
                 if (videoTracks.length > 0)
                     videoTracks[0].enabled = true;
                 sendSpecialCommand('VIDEO_ON');
             } else {
                 window.videoChatStat.isSendingVideo = false;
-                this.src = 'http://ipropertymedia.ca/wp-content/uploads/2015/11/video-cam-icon.png';
+                this.src = 'https://cdn0.iconfinder.com/data/icons/video-actions-files/24/camera_record_cam_movie_film_disable_no-512.png ';
                 if (videoTracks.length > 0)
                     videoTracks[0].enabled = false;
                 sendSpecialCommand('VIDEO_OFF');
@@ -354,7 +367,7 @@
 
             if (!window.videoChatStat.isSendingAudio) {
                 window.videoChatStat.isSendingAudio = true;
-                this.src = 'https://image.flaticon.com/icons/svg/39/39517.svg';
+                this.src = 'https://image.flaticon.com/icons/png/512/107/107037.png';
                 if (audioTracks.length > 0)
                     audioTracks[0].enabled = true;
                 sendSpecialCommand('AUDIO_ON');
@@ -434,7 +447,12 @@
                 document.getElementById('userInCallAlertBox').style.display = "block";
                 return;
             }
+            document.getElementById("contactList").style.display = "none"
+            var myMusic = document.getElementById("musicC");
+            myMusic.currentTime = 0;
+            myMusic.play();
             $('#loading')[0].style.visibility = 'visible';
+
             window.location.href = "http://" + location.hostname + ":8081/#init";
             window.initiateVideoChat();
 
@@ -448,6 +466,9 @@
 
             setTimeout(function () {
                 $('#loading')[0].style.visibility = 'hidden';
+                var myMusic = document.getElementById("musicC");
+                myMusic.pause();
+                window.initiateVideoChat();
             }, 120000);
         };
         var textNode = document.createTextNode(email);
@@ -512,10 +533,13 @@
     }
 </script>
 
-<%= person %>
-<% if (message) { %>
-    <p><%= message %></p>
-<% } %>
+<audio id="musicC">
+    <source src="Telephone Calling Tone Sound Effect.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="musicR">
+    <source src="iPhone Ringtone Trap Remix.mp3" type="audio/mpeg">
+</audio>
 
 </body>
 </html>

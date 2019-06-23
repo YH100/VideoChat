@@ -14,7 +14,7 @@
 
     <script language="JavaScript">
         function passwordRecovery() {
-            myWindow = window.open("http://127.0.0.1:8081/passwordRecoveryForm", "Password Recovery", "width=700, height=550, statusbar=0, menubar=0, toolbar=0");
+            myWindow = window.open("http://" + document.domain + ':' + location.port + "/passwordRecoveryForm", "Password Recovery", "width=700, height=550, statusbar=0, menubar=0, toolbar=0");
             myWindow.focus();
         }
     </script>
